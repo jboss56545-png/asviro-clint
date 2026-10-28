@@ -188,12 +188,27 @@ tbody tr:hover{background:var(--surface2)}
   .content{padding:14px}
   .topbar h1{font-size:16px}
 }
+
+/* Yahan fix kiya gaya hai mobile ke liye */
 @media(max-width:520px){
-  .grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:1fr}
+  .grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:repeat(2,1fr);gap:10px}
   .form-grid{grid-template-columns:1fr}
   .topbar .search{display:none}
-  .stat-value{font-size:19px}
+  
+  /* Dashboard cards ko square aur center aligned banane ke liye */
+  .grid.cols-4 .card { 
+    padding: 16px 10px; 
+    min-height: 105px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    text-align: center; 
+  }
+  .grid.cols-4 .stat-value { font-size: 18px; margin-top: 4px; }
+  .grid.cols-4 .stat-label { font-size: 10px; line-height: 1.2; letter-spacing: 0; }
 }
+
 .mt-1{margin-top:8px}.mt-2{margin-top:16px}.mt-3{margin-top:24px}
 .flex{display:flex}.between{justify-content:space-between}.center{align-items:center}.gap{gap:10px}
 .hidden{display:none}
@@ -513,15 +528,15 @@ function renderDashboard(){
     <div class="grid cols-4">
       ${statCard('Total Clients', totalClients, '', '')}
       ${statCard('Active Projects', active, '', '')}
-      ${statCard('Completed Projects', completed, '', 'pos')}
-      ${statCard('Agreed Project Value', fmtMoneyS(agreed), '', '')}
-      ${statCard('Payments Received', fmtMoneyS(received), '', 'pos')}
-      ${statCard('Outstanding Balance', fmtMoneyS(outstanding), '', outstanding>0?'warn':'')}
-      ${statCard('Overdue Amount', fmtMoneyS(overdue), '', overdue>0?'neg':'')}
-      ${statCard('Total Expenses', fmtMoneyS(expenses), '', '')}
-      ${statCard('Net Cash Position', fmtMoneyS(netCash), '', netCash>=0?'pos':'neg')}
-      ${statCard('Upcoming Deadlines', deadlines.length, 'Next 14 days', deadlines.length?'warn':'')}
-      ${statCard('Follow-ups Due', followups.length, 'Due today or earlier', followups.length?'neg':'')}
+      ${statCard('Completed', completed, '', 'pos')}
+      ${statCard('Agreed Value', fmtMoneyS(agreed), '', '')}
+      ${statCard('Received', fmtMoneyS(received), '', 'pos')}
+      ${statCard('Outstanding', fmtMoneyS(outstanding), '', outstanding>0?'warn':'')}
+      ${statCard('Overdue', fmtMoneyS(overdue), '', overdue>0?'neg':'')}
+      ${statCard('Expenses', fmtMoneyS(expenses), '', '')}
+      ${statCard('Net Cash', fmtMoneyS(netCash), '', netCash>=0?'pos':'neg')}
+      ${statCard('Deadlines', deadlines.length, '14 days', deadlines.length?'warn':'')}
+      ${statCard('Follow-ups', followups.length, 'Due', followups.length?'neg':'')}
     </div>
 
     <h3 class="section-title">Analytics</h3>
@@ -1653,12 +1668,24 @@ function openPaymentForm(id, presetClientId, presetProjectId){
 
   const clientSel = document.querySelector('[name=clientId]');
   const projSel = document.querySelector('[name=projectId]');
-  clientSel.onchange = () => {
-    const cid = clientSel.value;
+  
+  // FIX: Update dropdown and handle empty projects
+  const updateProjectDropdown = (cid, selectedProjectId = '') => {
     const plist = S.projects.filter(x=>x.clientId===cid);
-    projSel.innerHTML = '<option value="">Select project…</option>' +
-      plist.map(pr=>`<option value="${pr.id}">${esc(pr.name)}</option>`).join('');
+    if(plist.length === 0){
+       projSel.innerHTML = '<option value="">⚠ No project found. Add project first.</option>';
+    } else {
+       projSel.innerHTML = '<option value="">Select project…</option>' +
+         plist.map(pr=>`<option value="${pr.id}" ${pr.id === selectedProjectId ? 'selected' : ''}>${esc(pr.name)}</option>`).join('');
+    }
   };
+
+  clientSel.onchange = () => {
+    updateProjectDropdown(clientSel.value);
+  };
+  
+  // Initialize on load
+  updateProjectDropdown(clientSel.value, p.projectId || '');
 
   const form = document.getElementById('payment-form');
   form.addEventListener('submit', async (e) => {
@@ -1671,7 +1698,7 @@ function openPaymentForm(id, presetClientId, presetProjectId){
       const amount = parseFloat(data.amount);
       if(isNaN(amount) || amount <= 0) throw new Error('Amount must be greater than 0');
       if(!data.clientId) throw new Error('Select a client');
-      if(!data.projectId) throw new Error('Select a project');
+      if(!data.projectId) throw new Error('Select a valid project');
       if(!data.date || isNaN(new Date(data.date))) throw new Error('Enter a valid date');
 
       // duplicate protection
