@@ -267,6 +267,19 @@ const fmtDate = d => { if(!d) return '—'; const dt = new Date(d); if(isNaN(dt)
   return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); };
 const daysBetween = (a,b) => Math.round((new Date(b) - new Date(a))/86400000);
 
+// Helper: Supabase ke liye data ko clean karna (khali strings ko null banana)
+function sanitizeRecord(obj, dateFields = [], numFields = [], fkFields = []) {
+  const newObj = { ...obj };
+  dateFields.forEach(f => { if(!newObj[f]) newObj[f] = null; });
+  numFields.forEach(f => {
+    if(newObj[f] === '' || newObj[f] === undefined || newObj[f] === null) newObj[f] = 0;
+    else newObj[f] = Number(newObj[f]);
+  });
+  fkFields.forEach(f => { if(!newObj[f]) newObj[f] = null; });
+  Object.keys(newObj).forEach(k => { if(newObj[k] === '') newObj[k] = null; });
+  return newObj;
+}
+
 function toast(msg, type='success'){
   const t = document.createElement('div');
   t.className = 'toast ' + type;
@@ -926,12 +939,26 @@ function openClientForm(id){
   
   document.getElementById('form-client').onsubmit = async (e) => {
     e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
     const fd = new FormData(e.target); const data = Object.fromEntries(fd.entries());
-    if(!data.name.trim()) return document.getElementById('err').textContent = 'Name is required.';
-    if(!data.mobile.trim()) return document.getElementById('err').textContent = 'Mobile is required.';
+    if(!data.name.trim() || !data.mobile.trim()) {
+       alert('Name and Mobile are required!');
+       btn.disabled = false; btn.textContent = 'Save'; return;
+    }
     
-    const rec = { ...c, id: c.id || uid(), displayId: c.displayId || await nextDisplayId('clients','CL'), createdAt: c.createdAt || new Date().toISOString(), ...data };
-    try { await dbPut('clients', rec); await loadAll(); close(); toast('Saved'); route(); } catch(err){ document.getElementById('err').textContent = err.message; document.getElementById('err').style.display='block'; }
+    let rec = { ...c, id: c.id || uid(), displayId: c.displayId || await nextDisplayId('clients','CL'), createdAt: c.createdAt || new Date().toISOString(), ...data };
+    rec = sanitizeRecord(rec, ['firstContactDate']); // Fix empty date strings
+
+    try { 
+      await dbPut('clients', rec); 
+      await loadAll(); close(); toast('Client Saved Successfully'); route(); 
+    } catch(err){ 
+      alert('Error Saving: ' + err.message); 
+    } finally { 
+      btn.disabled = false; btn.textContent = 'Save'; 
+    }
   };
 }
 
@@ -985,48 +1012,55 @@ function openProjectForm(id, clientId){
 
   document.getElementById('form-proj').onsubmit = async (e) => {
     e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.target).entries());
-    if(!data.name.trim()) return document.getElementById('proj-err').textContent = 'Project name is required.';
-    if(!data.clientId) return document.getElementById('proj-err').textContent = 'Client is required.';
-    const price = parseFloat(data.agreedPrice);
-    if(isNaN(price) || price < 0) return document.getElementById('proj-err').textContent = 'Price must be valid.';
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Saving...';
 
-    const rec = { 
-      ...p, 
-      id: p.id || uid(), 
-      displayId: p.displayId || await nextDisplayId('projects','PR'), 
-      createdAt: p.createdAt || new Date().toISOString(), 
-      clientId: data.clientId,
-      name: data.name.trim(), 
-      type: data.type, 
-      description: data.description,
-      agreedPrice: price,
-      startDate: data.startDate, 
-      deadline: data.deadline,
-      status: data.status, 
-      domainCost: +data.domainCost||0,
-      hostingCost: +data.hostingCost||0, 
-      otherExpenses: +data.otherExpenses||0,
-      deliveryDate: data.deliveryDate, 
-      liveUrl: data.liveUrl, 
-      repoUrl: data.repoUrl,
-      notes: data.notes
+    const data = Object.fromEntries(new FormData(e.target).entries());
+    if(!data.name.trim() || !data.clientId) {
+       alert('Name and Client are required!');
+       btn.disabled = false; btn.textContent = 'Save'; return;
+    }
+
+    let rec = { 
+      ...p, id: p.id || uid(), displayId: p.displayId || await nextDisplayId('projects','PR'),
+      createdAt: p.createdAt || new Date().toISOString(),
+      clientId: data.clientId, name: data.name.trim(), type: data.type,
+      description: data.description, agreedPrice: data.agreedPrice,
+      startDate: data.startDate, deadline: data.deadline, status: data.status,
+      domainCost: data.domainCost, hostingCost: data.hostingCost, otherExpenses: data.otherExpenses,
+      deliveryDate: data.deliveryDate, liveUrl: data.liveUrl, repoUrl: data.repoUrl, notes: data.notes
     };
-    try { await dbPut('projects', rec); await loadAll(); close(); toast('Saved'); route(); } catch(err){ document.getElementById('proj-err').textContent = err.message; }
+    rec = sanitizeRecord(rec, ['startDate','deadline','deliveryDate'], ['agreedPrice','domainCost','hostingCost','otherExpenses'], ['clientId']);
+
+    try { 
+      await dbPut('projects', rec); 
+      await loadAll(); close(); toast('Project Saved'); route(); 
+    } catch(err){ 
+      alert('Error Saving: ' + err.message); 
+    } finally { 
+      btn.disabled = false; btn.textContent = 'Save'; 
+    }
   };
 }
 
-function openPaymentForm(id){
-  const p = id ? S.payments.find(x=>x.id===id) : {};
+function openPaymentForm(id, presetClientId, presetProjectId){
+  const p = id ? S.payments.find(x=>x.id===id) : {clientId:presetClientId, projectId:presetProjectId};
   if(id && !p) return;
   const clients = S.clients.filter(c=>!c.archived);
   if(!clients.length) return toast('Add client first','error');
   
+  let defaultClientId = p.clientId || presetClientId;
+  if(presetProjectId) {
+     const proj = S.projects.find(x=>x.id === presetProjectId);
+     if(proj) defaultClientId = proj.clientId;
+  }
+  if(!defaultClientId) defaultClientId = clients[0].id;
+
   const { close } = openModal(id?'Edit Payment':'Add Payment', `
     <form id="form-pay" class="form-grid">
       <label>Client *
         <select name="clientId" id="pay-client" required>
-          ${clients.map(c=>`<option value="${c.id}" ${p.clientId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+          ${clients.map(c=>`<option value="${c.id}" ${defaultClientId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
         </select></label>
       <label>Project *
         <select name="projectId" id="pay-proj" required>
@@ -1067,32 +1101,37 @@ function openPaymentForm(id){
     document.getElementById('pay-proj').innerHTML = plist.length ? plist.map(x=>`<option value="${x.id}" ${x.id===sel?'selected':''}>${esc(x.name)}</option>`).join('') : '<option value="">⚠ No projects. Add project first.</option>';
   };
   document.getElementById('pay-client').onchange = (e) => updateProj(e.target.value);
-  updateProj(p.clientId || clients[0].id, p.projectId);
+  updateProj(defaultClientId, p.projectId);
 
   document.getElementById('form-pay').onsubmit = async (e) => {
     e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
     const data = Object.fromEntries(new FormData(e.target).entries());
     const amount = parseFloat(data.amount);
-    if(isNaN(amount) || amount <= 0) return document.getElementById('pay-err').textContent = 'Amount must be > 0.';
-    if(!data.projectId) return document.getElementById('pay-err').textContent = 'Select a valid project.';
+    if(isNaN(amount) || amount <= 0 || !data.projectId) {
+       alert('Valid amount and project are required!');
+       btn.disabled = false; btn.textContent = 'Save'; return;
+    }
 
-    const rec = { 
-      ...p, 
-      id: p.id || uid(), 
-      displayId: p.displayId || await nextDisplayId('payments','RC'), 
+    let rec = { 
+      ...p, id: p.id || uid(), displayId: p.displayId || await nextDisplayId('payments','RC'), 
       createdAt: p.createdAt || new Date().toISOString(), 
-      clientId: data.clientId, 
-      projectId: data.projectId,
-      type: data.type, 
-      amount: amount, 
-      date: data.date, 
-      method: data.method,
-      purpose: data.purpose, 
-      refId: data.refId, 
-      notes: data.notes, 
-      status: data.status
+      clientId: data.clientId, projectId: data.projectId, type: data.type, 
+      amount: amount, date: data.date, method: data.method,
+      purpose: data.purpose, refId: data.refId, notes: data.notes, status: data.status
     };
-    try { await dbPut('payments', rec); await loadAll(); close(); toast('Saved'); route(); } catch(err){ document.getElementById('pay-err').textContent = err.message; }
+    rec = sanitizeRecord(rec, ['date'], ['amount'], ['clientId', 'projectId']);
+
+    try { 
+      await dbPut('payments', rec); 
+      await loadAll(); close(); toast('Payment Recorded'); route(); 
+    } catch(err){ 
+      alert('Error Saving: ' + err.message); 
+    } finally { 
+      btn.disabled = false; btn.textContent = 'Save'; 
+    }
   };
 }
 
@@ -1134,26 +1173,32 @@ function openExpenseForm(id){
 
   document.getElementById('form-exp').onsubmit = async (e) => {
     e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
     const data = Object.fromEntries(new FormData(e.target).entries());
     const amt = parseFloat(data.amount);
-    if(isNaN(amt) || amt <= 0) return document.getElementById('exp-err').textContent = 'Amount must be > 0.';
-    if(!data.description.trim()) return document.getElementById('exp-err').textContent = 'Description is required.';
+    if(isNaN(amt) || amt <= 0 || !data.description.trim()) {
+       alert('Amount and Description are required!');
+       btn.disabled = false; btn.textContent = 'Save'; return;
+    }
     
-    const rec = { 
-      ...e, 
-      id: e.id || uid(), 
-      displayId: e.displayId || await nextDisplayId('expenses','EX'), 
+    let rec = { 
+      ...e, id: e.id || uid(), displayId: e.displayId || await nextDisplayId('expenses','EX'), 
       createdAt: e.createdAt || new Date().toISOString(),
-      date: data.date, 
-      category: data.category, 
-      description: data.description.trim(),
-      amount: amt, 
-      method: data.method, 
-      clientId: data.clientId||'',
-      projectId: data.projectId||'', 
-      notes: data.notes
+      date: data.date, category: data.category, description: data.description.trim(),
+      amount: amt, method: data.method, clientId: data.clientId, projectId: data.projectId, notes: data.notes
     };
-    try { await dbPut('expenses', rec); await loadAll(); close(); toast('Saved'); route(); } catch(err){ document.getElementById('exp-err').textContent = err.message; }
+    rec = sanitizeRecord(rec, ['date'], ['amount'], ['clientId', 'projectId']);
+
+    try { 
+      await dbPut('expenses', rec); 
+      await loadAll(); close(); toast('Expense Added'); route(); 
+    } catch(err){ 
+      alert('Error Saving: ' + err.message); 
+    } finally { 
+      btn.disabled = false; btn.textContent = 'Save'; 
+    }
   };
 }
 
@@ -1186,10 +1231,29 @@ function openFollowupForm(id, clientId){
   
   document.getElementById('form-fu').onsubmit = async (e) => {
     e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
     const data = Object.fromEntries(new FormData(e.target).entries());
-    if(!data.purpose.trim()) return document.getElementById('fu-err').textContent = 'Purpose is required.';
-    const rec = { ...f, id: f.id || uid(), displayId: f.displayId || await nextDisplayId('followups','FU'), createdAt: f.createdAt || new Date().toISOString(), ...data };
-    try { await dbPut('followups', rec); await loadAll(); close(); toast('Saved'); route(); } catch(err){ document.getElementById('fu-err').textContent = err.message; }
+    if(!data.purpose.trim() || !data.clientId) {
+       alert('Purpose and Client are required!');
+       btn.disabled = false; btn.textContent = 'Save'; return;
+    }
+
+    let rec = { 
+      ...f, id: f.id || uid(), displayId: f.displayId || await nextDisplayId('followups','FU'), 
+      createdAt: f.createdAt || new Date().toISOString(), ...data 
+    };
+    rec = sanitizeRecord(rec, ['date', 'nextDate'], [], ['clientId']);
+
+    try { 
+      await dbPut('followups', rec); 
+      await loadAll(); close(); toast('Follow-up Added'); route(); 
+    } catch(err){ 
+      alert('Error Saving: ' + err.message); 
+    } finally { 
+      btn.disabled = false; btn.textContent = 'Save'; 
+    }
   };
 }
 
