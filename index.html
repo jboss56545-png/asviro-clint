@@ -772,8 +772,14 @@ function renderClientProfile(parts){
           ${c.mapsUrl?row('Maps', c.mapsUrl, 'Open'):''}
           ${c.address?row('Address','',c.address):''}
           ${c.city||c.state?row('City / State','',[c.city,c.state].filter(Boolean).join(', ')):''}
+          ${c.source?row('Source','',c.source):''}
+          ${c.firstContactDate?row('First Contact','',fmtDate(c.firstContactDate)):''}
         </div>
         ${c.notes?`<div class="mt-2"><div class="stat-label">Notes</div><div class="mt-1" style="font-size:13px;white-space:pre-wrap">${esc(c.notes)}</div></div>`:''}
+        ${c.links?`<div class="mt-2"><div class="stat-label">Documents & Links</div>
+          <div class="mt-1" style="font-size:13px">${parseLinks(c.links).map(l=>
+            `<div>${l.url?`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`:esc(l.label)}</div>`
+          ).join('')}</div></div>`:''}
       </div>
       <div class="card">
         <div class="flex between center"><div class="stat-label">Follow-ups</div><button class="btn btn-sm btn-ghost" onclick="openFollowupForm(null, '${c.id}')">+ Add</button></div>
@@ -795,6 +801,13 @@ function renderClientProfile(parts){
 }
 function row(label, href, value){ return `<div><strong style="color:var(--muted);font-weight:600;display:inline-block;min-width:90px">${esc(label)}</strong>${href?`<a href="${esc(href)}" target="_blank" rel="noopener">${esc(value)}</a>`:esc(value)}</div>`; }
 function waLink(number, message){ const n = (number||'').replace(/\D/g,''); return n ? `https://wa.me/${n}${message?'?text='+encodeURIComponent(message):''}` : '#'; }
+function parseLinks(text){
+  return (text||'').split('\n').map(line=>{
+    const [a,b] = line.split('|').map(s=>s.trim());
+    if(!a) return null;
+    return b ? {label:a, url:b} : {label:a, url:''};
+  }).filter(Boolean);
+}
 
 /* ============================================================
    PROJECTS & PAYMENTS & EXPENSES & FOLLOWUPS
@@ -858,20 +871,59 @@ function renderSettings(){
    ============================================================ */
 function openClientForm(id){
   const c = id ? S.clients.find(x=>x.id===id) : {};
+  if(id && !c) return;
   const { close } = openModal(id?'Edit Client':'Add Client', `
     <form id="form-client" class="form-grid">
-      <label class="full">Name * <input name="name" required value="${esc(c.name||'')}"></label>
-      <label>Mobile * <input name="mobile" required value="${esc(c.mobile||'')}"></label>
-      <label>WhatsApp <input name="whatsapp" value="${esc(c.whatsapp||'')}"></label>
-      <label>Owner <input name="owner" value="${esc(c.owner||'')}"></label>
-      <label>Category <input name="category" value="${esc(c.category||'')}"></label>
-      <label class="full">Address <textarea name="address">${esc(c.address||'')}</textarea></label>
+      <label class="full">Business / Client Name *
+        <input name="name" required value="${esc(c.name||'')}" placeholder="e.g. Sharma Mobile Shop"></label>
+      <label>Owner / Contact Person
+        <input name="owner" value="${esc(c.owner||'')}" placeholder="e.g. Rajesh Sharma"></label>
+      <label>Category
+        <select name="category">
+          <option value="">Select…</option>
+          ${['Mobile Shop','Coaching Institute','School','Local Business','Restaurant','Personal Portfolio','Other']
+            .map(x=>`<option ${c.category===x?'selected':''}>${x}</option>`).join('')}
+        </select></label>
+      <label>Mobile Number *
+        <input name="mobile" required inputmode="tel" value="${esc(c.mobile||'')}" placeholder="10-digit mobile"></label>
+      <label>WhatsApp Number
+        <input name="whatsapp" inputmode="tel" value="${esc(c.whatsapp||'')}" placeholder="With country code e.g. 919876543210"></label>
+      <label>Email
+        <input name="email" type="email" value="${esc(c.email||'')}"></label>
+      <label>Website URL
+        <input name="websiteUrl" value="${esc(c.websiteUrl||'')}"></label>
+      <label class="full">Full Address
+        <textarea name="address" rows="2">${esc(c.address||'')}</textarea></label>
+      <label>City <input name="city" value="${esc(c.city||'')}"></label>
+      <label>State <input name="state" value="${esc(c.state||'')}"></label>
+      <label>Google Maps URL <input name="mapsUrl" value="${esc(c.mapsUrl||'')}"></label>
+      <label>Client Source
+        <select name="source">
+          <option value="">Select…</option>
+          ${['Referral','Direct Visit','WhatsApp','Online','Social Media','Other']
+            .map(x=>`<option ${c.source===x?'selected':''}>${x}</option>`).join('')}
+        </select></label>
+      <label>First Contact Date
+        <input name="firstContactDate" type="date" value="${esc(c.firstContactDate||todayStr())}"></label>
+      <label>Status
+        <select name="status">
+          ${['Lead','Contacted','Interested','Confirmed','Active','Completed','Cancelled']
+            .map(x=>`<option ${(c.status||'Lead')===x?'selected':''}>${x}</option>`).join('')}
+        </select></label>
+      <label class="full">Notes
+        <textarea name="notes" rows="2">${esc(c.notes||'')}</textarea></label>
+      <label class="full">Documents & Links (one per line: <em>Label | URL</em>)
+        <textarea name="links" rows="2" placeholder="Design mockup | https://drive.google.com/...">${esc(c.links||'')}</textarea></label>
       <div class="form-error full" id="err"></div>
-      <div class="form-actions full"><button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+      <div class="form-actions full"><button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button type="submit" class="btn btn-primary">${id?'Save Changes':'Create Client'}</button></div>
     </form>`, {wide:true});
+  
   document.getElementById('form-client').onsubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target); const data = Object.fromEntries(fd.entries());
+    if(!data.name.trim()) return document.getElementById('err').textContent = 'Name is required.';
+    if(!data.mobile.trim()) return document.getElementById('err').textContent = 'Mobile is required.';
+    
     const rec = { ...c, id: c.id || uid(), displayId: c.displayId || await nextDisplayId('clients','CL'), createdAt: c.createdAt || new Date().toISOString(), ...data };
     try { await dbPut('clients', rec); await loadAll(); close(); toast('Saved'); route(); } catch(err){ document.getElementById('err').textContent = err.message; document.getElementById('err').style.display='block'; }
   };
