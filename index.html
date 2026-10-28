@@ -16,10 +16,9 @@
   --radius:12px;
 }
 *{box-sizing:border-box}
-html,body{margin:0;padding:0}
+html,body{margin:0;padding:0; width:100%; overflow-x:hidden;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-  background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
-  overflow-x:hidden}
+  background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
 a{color:var(--accent);text-decoration:none}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
 input,select,textarea{font-family:inherit;font-size:14px;width:100%;padding:10px 12px;
@@ -30,7 +29,7 @@ input:invalid,select:invalid{border-color:var(--danger)}
 ::placeholder{color:#5a6b8a}
 
 /* Layout */
-.app{display:flex;min-height:100vh}
+.app{display:flex;min-height:100vh; width:100%;}
 .sidebar{width:250px;background:var(--surface);border-right:1px solid var(--border);
   position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100;
   transition:transform .25s ease;display:flex;flex-direction:column}
@@ -45,7 +44,7 @@ input:invalid,select:invalid{border-color:var(--danger)}
   color:var(--text);box-shadow:inset 2px 0 0 var(--accent)}
 .sidebar .icon{width:20px;text-align:center;font-size:16px}
 .sidebar .foot{padding:14px 20px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)}
-.main{flex:1;margin-left:250px;min-width:0;display:flex;flex-direction:column}
+.main{flex:1;margin-left:250px;min-width:0;display:flex;flex-direction:column; width:100%;}
 .topbar{position:sticky;top:0;z-index:50;background:rgba(10,14,26,.92);backdrop-filter:blur(10px);
   border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:12px 20px}
 .topbar h1{font-size:18px;margin:0;font-weight:700;flex-shrink:0}
@@ -54,17 +53,17 @@ input:invalid,select:invalid{border-color:var(--danger)}
 .topbar .search::before{content:"🔍";position:absolute;left:11px;top:50%;transform:translateY(-50%);
   font-size:13px;opacity:.6}
 .hamburger{display:none;font-size:22px;padding:4px 8px}
-.content{padding:20px;flex:1}
+.content{padding:20px;flex:1; width:100%;}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99}
 .overlay.show{display:block}
 
-/* Cards */
-.grid{display:grid;gap:14px}
+/* Cards & Grids */
+.grid{display:grid;gap:14px; width:100%;}
 .grid.cols-2{grid-template-columns:repeat(2,1fr)}
 .grid.cols-3{grid-template-columns:repeat(3,1fr)}
 .grid.cols-4{grid-template-columns:repeat(4,1fr)}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:16px;transition:border-color .15s}
+  padding:16px;transition:border-color .15s; width:100%;}
 .card.clickable{cursor:pointer}
 .card.clickable:hover{border-color:var(--primary)}
 .stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
@@ -76,7 +75,7 @@ input:invalid,select:invalid{border-color:var(--danger)}
 .section-title{font-size:16px;font-weight:700;margin:24px 0 12px}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:9px;
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:9px;
   font-weight:600;font-size:13px;transition:transform .08s,background .15s;white-space:nowrap}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff}
@@ -103,7 +102,7 @@ input:invalid,select:invalid{border-color:var(--danger)}
 
 /* Tables */
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;
-  border:1px solid var(--border);background:var(--surface)}
+  border:1px solid var(--border);background:var(--surface); width:100%;}
 table{width:100%;border-collapse:collapse;min-width:600px}
 th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:13px}
 th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);
@@ -160,9 +159,6 @@ tbody tr:hover{background:var(--surface2)}
 /* Tabs / filters */
 .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center}
 .filters input,.filters select{padding:8px 10px;font-size:13px;width:auto;min-width:140px}
-.chip{padding:6px 12px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid var(--border);
-  background:var(--surface2);color:var(--muted);cursor:pointer;transition:.15s}
-.chip.active{background:rgba(59,130,246,.2);color:#93c5fd;border-color:var(--primary)}
 
 /* Progress */
 .progress{height:6px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:8px}
@@ -176,44 +172,52 @@ tbody tr:hover{background:var(--surface2)}
 .profile-head .meta{color:var(--muted);font-size:13px}
 
 /* Chart */
-.chart-box{position:relative;height:260px;padding:10px}
-.chart-box canvas{max-height:100%}
+.chart-box{position:relative;height:260px;padding:10px; width:100%;}
+.chart-box canvas{max-height:100%; width:100% !important;}
 
-/* Responsive */
+/* ============================================================
+   RESPONSIVE FIXES (Mobile & Tablet)
+   ============================================================ */
 @media(max-width:900px){
   .sidebar{transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0)}
   .main{margin-left:0}
   .hamburger{display:block}
-  .grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:1fr 1fr}
+  
+  /* Tablet me top cards 2-2 karke, baaki 1 line me */
+  .grid.cols-4, .grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid.cols-2 { grid-template-columns: 1fr; } 
+  
   .content{padding:14px}
   .topbar h1{font-size:16px}
 }
 
-/* Ultra Compact Mobile Grid Fix */
 @media(max-width:520px){
-  .grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:repeat(2,1fr);gap:8px}
-  .form-grid{grid-template-columns:1fr}
-  .topbar .search{display:none}
+  /* Mobile: Sirf Top Numbers ke liye 2x2 grid */
+  .grid.cols-4 { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   
-  /* Chote aur compact cards */
+  /* Baaki sab (Charts, Reminders, Forms) 1 line me */
+  .grid.cols-2, .grid.cols-3 { grid-template-columns: 1fr; gap: 12px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .topbar .search { display: none; }
+  
+  /* Chote aur compact Top Cards */
   .grid.cols-4 .card { 
-    padding: 10px 6px; 
-    min-height: 75px; 
+    padding: 12px 8px; 
+    min-height: 80px; 
     display: flex; 
     flex-direction: column; 
     justify-content: center; 
     align-items: center; 
     text-align: center; 
   }
-  .grid.cols-4 .stat-value { font-size: 15px; margin-top: 2px; }
-  .grid.cols-4 .stat-label { font-size: 9px; line-height: 1.1; letter-spacing: 0; }
-  .grid.cols-4 .stat-sub { font-size: 9px; margin-top: 2px; }
-}
+  .grid.cols-4 .stat-value { font-size: 16px; margin-top: 2px; }
+  .grid.cols-4 .stat-label { font-size: 10px; line-height: 1.1; letter-spacing: 0; }
+  .grid.cols-4 .stat-sub { font-size: 10px; margin-top: 2px; }
 
-.mt-1{margin-top:8px}.mt-2{margin-top:16px}.mt-3{margin-top:24px}
-.flex{display:flex}.between{justify-content:space-between}.center{align-items:center}.gap{gap:10px}
-.hidden{display:none}
+  /* Charts ko mobile pe thoda chhota karo */
+  .chart-box { height: 220px; }
+}
 </style>
 </head>
 <body>
