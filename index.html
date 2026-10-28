@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#0a0e1a">
 <title>ClientDesk — Client & Payment Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -217,35 +216,12 @@ tbody tr:hover{background:var(--surface2)}
 </head>
 <body>
 
-<!-- LOGIN SCREEN (Only shows if Supabase is configured and user is not logged in) -->
-<div id="auth-screen" class="hidden" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
-  <div class="card" style="max-width:400px;width:100%;">
-    <div class="brand" style="text-align:center;margin-bottom:20px;font-size:24px;">ClientDesk Login</div>
-    <form id="login-form" class="form-grid">
-      <label class="full">Email
-        <input type="email" id="auth-email" required placeholder="you@example.com">
-      </label>
-      <label class="full">Password
-        <input type="password" id="auth-password" required placeholder="••••••••">
-      </label>
-      <div class="form-error full" id="auth-err"></div>
-      <div class="form-actions full" style="justify-content:center;">
-        <button type="submit" class="btn btn-primary full" style="width:100%;justify-content:center;">Login</button>
-      </div>
-    </form>
-    <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:15px;">
-      Cloud Sync Mode Active. Secure private access.
-    </p>
-  </div>
-</div>
-
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">ClientDesk</div>
     <nav id="nav"></nav>
     <div class="foot">
-      <div id="sync-status" style="margin-bottom:8px;">Status: <span style="color:var(--warning)">Connecting...</span></div>
-      <button class="btn btn-ghost btn-sm" onclick="logout()" id="logout-btn" style="display:none;width:100%;">Logout</button>
+      <div id="sync-status" style="margin-bottom:8px;">Mode: <span style="color:var(--warning)">Connecting...</span></div>
     </div>
   </aside>
   <div class="overlay" id="overlay"></div>
@@ -367,7 +343,6 @@ const dbAll = async (store) => {
 
 const dbPut = async (store,obj) => {
   if (useCloud) {
-    // Add owner_id for RLS (though DB defaults it, explicitly sending sometimes helps)
     const { data, error } = await supabaseClient.from(store).upsert(obj);
     if (error) throw new Error(error.message);
     return obj;
@@ -389,7 +364,6 @@ const dbDel = async (store,id) => {
 
 const dbClear = async (store) => {
   if (useCloud) {
-    // In Supabase, delete without filter is blocked by RLS. We delete matching the user's records.
     const { error } = await supabaseClient.from(store).delete().neq('id', '00000000-0000-0000-0000-000000000000');
     if (error) throw new Error(error.message);
   } else {
@@ -404,7 +378,7 @@ async function loadAll(){
   if (useCloud) {
     [S.clients,S.projects,S.payments,S.expenses,S.followups] = await Promise.all(
       ['clients','projects','payments','expenses','followups'].map(dbAll));
-    S.audit = []; // Audit log not fully implemented in Supabase to save space, keeping local
+    S.audit = []; 
   } else {
     [S.clients,S.projects,S.payments,S.expenses,S.followups,S.audit] = await Promise.all(
       ['clients','projects','payments','expenses','followups','audit'].map(dbAll));
@@ -823,7 +797,7 @@ function row(label, href, value){ return `<div><strong style="color:var(--muted)
 function waLink(number, message){ const n = (number||'').replace(/\D/g,''); return n ? `https://wa.me/${n}${message?'?text='+encodeURIComponent(message):''}` : '#'; }
 
 /* ============================================================
-   PROJECTS & PAYMENTS & EXPENSES & FOLLOWUPS (Same logic, abbreviated for clarity)
+   PROJECTS & PAYMENTS & EXPENSES & FOLLOWUPS
    ============================================================ */
 function renderProjects(){
   $('#page-title').textContent = 'Projects';
@@ -868,7 +842,7 @@ function renderFollowups(){
 }
 function renderReports(){
   $('#page-title').textContent = 'Reports';
-  $('#content').innerHTML = `<div class="card"><h3 class="section-title">Export Data</h3><button class="btn btn-ghost" onclick="printClientStatement()">🖨️ Print Statement</button> <button class="btn btn-ghost" onclick="exportJSON()">⬇ Download JSON Backup</button></div>`;
+  $('#content').innerHTML = `<div class="card"><h3 class="section-title">Export Data</h3><button class="btn btn-ghost" onclick="window.print()">🖨️ Print Statement</button> <button class="btn btn-ghost" onclick="exportJSON()">⬇ Download JSON Backup</button></div>`;
 }
 function renderSettings(){
   $('#page-title').textContent = 'Settings';
@@ -880,7 +854,7 @@ function renderSettings(){
 }
 
 /* ============================================================
-   FORMS (Client, Project, Payment, Expense, Followup)
+   FORMS
    ============================================================ */
 function openClientForm(id){
   const c = id ? S.clients.find(x=>x.id===id) : {};
@@ -1011,52 +985,33 @@ async function importJSON(ev){ const file=ev.target.files[0]; if(!file) return; 
 async function wipeAll(){ if(!(await confirmAction('Wipe all data?'))) return; for(const s of ['clients','projects','payments','expenses','followups']) await dbClear(s); await loadAll(); route(); }
 
 /* ============================================================
-   AUTH & INIT
+   INIT
    ============================================================ */
-async function checkAuth(){
-  if(!useCloud){
-    document.getElementById('sync-status').innerHTML = 'Mode: <span style="color:var(--warning)">Local (Offline)</span>';
-    return true;
-  }
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if(session) {
-    document.getElementById('sync-status').innerHTML = 'Mode: <span style="color:var(--success)">Cloud Sync</span>';
-    document.getElementById('logout-btn').style.display = 'block';
-    return true;
-  }
-  document.getElementById('auth-screen').classList.remove('hidden');
-  return false;
-}
-
-document.getElementById('login-form').onsubmit = async (e) => {
-  e.preventDefault();
-  const email = document.getElementById('auth-email').value;
-  const password = document.getElementById('auth-password').value;
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if(error) document.getElementById('auth-err').textContent = error.message;
-  else location.reload();
-};
-
-async function logout(){ if(useCloud){ await supabaseClient.auth.signOut(); location.reload(); } }
-
 (async function init(){
   try {
-    if (!useCloud) await openDB(); // Only open IndexedDB if offline
+    if (!useCloud) await openDB(); 
     buildNav();
     
-    const isAuth = await checkAuth();
-    if (isAuth) {
+    if (useCloud) {
+      document.getElementById('sync-status').innerHTML = 'Mode: <span style="color:var(--success)">Cloud Sync</span>';
+      
+      // Initial Load
       await loadAll();
-      if (useCloud) {
-        // Real-time sync listener
-        supabaseClient.channel('custom-all-channel')
-          .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
-            loadAll().then(() => route());
-          }).subscribe();
-      }
-      if(!location.hash) location.hash = '#/dashboard';
-      route();
+      
+      // Real-time sync listener (Updates data automatically when friend adds something)
+      supabaseClient.channel('custom-all-channel')
+        .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+          loadAll().then(() => route());
+        }).subscribe();
+        
+    } else {
+      document.getElementById('sync-status').innerHTML = 'Mode: <span style="color:var(--warning)">Local</span>';
+      await loadAll();
     }
+    
+    if(!location.hash) location.hash = '#/dashboard';
+    route();
+    
   } catch(err){
     document.getElementById('content').innerHTML = `<div class="empty"><h3>Failed to start</h3><p>${esc(err.message)}</p></div>`;
     console.error(err);
@@ -1072,7 +1027,7 @@ window.toggleArchiveClient = toggleArchiveClient; window.printReceipt = printRec
 window.openInvoice = openProjectDetail; window.printClientStatement = printClientStatement;
 window.exportJSON = exportJSON; window.importJSON = importJSON;
 window.wipeAll = wipeAll; window.completeFollowup = completeFollowup;
-window.openProjectDetail = openProjectDetail; window.logout = logout;
+window.openProjectDetail = openProjectDetail;
 </script>
 </body>
 </html>
