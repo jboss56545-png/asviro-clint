@@ -771,7 +771,7 @@ function renderClients(parts){
                 const out = Calc.clientOutstanding(c.id); const pc = Calc.clientProjects(c.id).length;
                 return `<tr onclick="location.hash='#/client/${c.id}'">
                   <td><span class="badge gray">${esc(c.displayId)}</span></td>
-                  <td><strong style="font-size:14px;color:#fff;">${esc(c.name)}</strong>${c.owner?`<div class="stat-sub">${esc(c.owner)}</div>`:''}</td>
+                  <td><strong style="font-size:14px;color:#fff;">${esc(c.owner || c.name)}</strong>${c.owner && c.name ? `<div class="stat-sub">${esc(c.name)}</div>`:''}</td>
                   <td>${esc(c.mobile||'—')}<div class="stat-sub">${c.whatsapp ? '+91 ' + esc(c.whatsapp.replace(/^\+?91/, '')) : ''}</div></td>
                   <td><span class="badge blue">${pc}</span></td>
                   <td class="num ${out>0?'':'pos'}" style="color:${out>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(out)}</td>
@@ -874,7 +874,7 @@ function renderProjects(){
     ${list.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>ID</th><th>Project</th><th>Client</th><th>Status</th><th class="num">Agreed</th><th class="num">Balance</th><th>Deadline</th></tr></thead><tbody>
       ${list.map(p=>{
         const c = S.clients.find(x=>x.id===p.clientId); const bal = Calc.projBalance(p);
-        return `<tr onclick="openProjectDetail('${p.id}')"><td><span class="badge gray">${esc(p.displayId)}</span></td><td><strong style="color:#fff;">${esc(p.name)}</strong></td><td>${esc(c?c.name:'—')} ${c && c.owner ? `<br><span class="stat-sub">${esc(c.owner)}</span>` : ''}</td><td>${projectStatusBadge(p.status)}</td><td class="num">${fmtMoney(p.agreedPrice)}</td><td class="num" style="color:${bal>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(bal)}</td><td>${fmtDate(p.deadline)}</td></tr>`;
+        return `<tr onclick="openProjectDetail('${p.id}')"><td><span class="badge gray">${esc(p.displayId)}</span></td><td><strong style="color:#fff;">${esc(p.name)}</strong></td><td><strong style="color:#fff;">${esc(c ? (c.owner || c.name) : '—')}</strong></td><td>${projectStatusBadge(p.status)}</td><td class="num">${fmtMoney(p.agreedPrice)}</td><td class="num" style="color:${bal>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(bal)}</td><td>${fmtDate(p.deadline)}</td></tr>`;
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No projects yet</h3><button class="btn btn-primary" onclick="openProjectForm()">+ Add Project</button></div>`}`;
 }
 function renderPayments(){
@@ -884,7 +884,7 @@ function renderPayments(){
     <div class="filters"><button class="btn btn-primary" onclick="openPaymentForm()">+ Add Payment</button></div>
     ${list.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>Receipt</th><th>Date</th><th>Client</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(p=>{ const c = S.clients.find(x=>x.id===p.clientId);
-        return `<tr><td>${esc(p.displayId)}</td><td>${fmtDate(p.date)}</td><td>${esc(c?c.name:'—')} ${c && c.owner ? `<br><span class="stat-sub">${esc(c.owner)}</span>` : ''}</td><td class="num" style="color:var(--success); font-weight:600;">${fmtMoney(p.amount)}</td><td><span class="badge ${p.status==='Confirmed'?'green':'yellow'}">${esc(p.status)}</span></td>
+        return `<tr><td>${esc(p.displayId)}</td><td>${fmtDate(p.date)}</td><td><strong style="color:#fff;">${esc(c ? (c.owner || c.name) : '—')}</strong></td><td class="num" style="color:var(--success); font-weight:600;">${fmtMoney(p.amount)}</td><td><span class="badge ${p.status==='Confirmed'?'green':'yellow'}">${esc(p.status)}</span></td>
         <td style="text-align:right;"><button class="icon-btn" onclick="openPaymentForm('${p.id}')">✏️</button> <button class="icon-btn" onclick="printReceipt('${p.id}')">🖨️</button> <button class="icon-btn" onclick="deletePayment('${p.id}')">🗑️</button></td></tr>`;
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No payments recorded</h3><button class="btn btn-primary" onclick="openPaymentForm()">+ Add Payment</button></div>`}`;
 }
@@ -903,7 +903,7 @@ function renderFollowups(){
     <div class="filters"><button class="btn btn-primary" onclick="openFollowupForm()">+ Add Follow-up</button></div>
     ${list.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>Date</th><th>Client</th><th>Purpose</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(f=>{ const c = S.clients.find(x=>x.id===f.clientId);
-        return `<tr><td>${fmtDate(f.date)}</td><td><strong style="color:#fff;">${esc(c?c.name:'—')}</strong> ${c && c.owner ? `<br><span class="stat-sub">${esc(c.owner)}</span>` : ''}</td><td>${esc(f.purpose)}</td><td><span class="badge ${f.status==='Completed'?'green':f.status==='Rescheduled'?'yellow':'blue'}">${esc(f.status)}</span></td>
+        return `<tr><td>${fmtDate(f.date)}</td><td><strong style="color:#fff;">${esc(c ? (c.owner || c.name) : '—')}</strong></td><td>${esc(f.purpose)}</td><td><span class="badge ${f.status==='Completed'?'green':f.status==='Rescheduled'?'yellow':'blue'}">${esc(f.status)}</span></td>
         <td style="text-align:right;">${f.status==='Pending'?`<button class="icon-btn" onclick="completeFollowup('${f.id}')">✅</button>`:''} <button class="icon-btn" onclick="deleteFollowup('${f.id}')">🗑️</button></td></tr>`;
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No follow-ups</h3><button class="btn btn-primary" onclick="openFollowupForm()">+ Add Follow-up</button></div>`}`;
 }
