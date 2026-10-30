@@ -891,6 +891,12 @@ function renderSettings(){
 function openClientForm(id){
   const c = id ? S.clients.find(x=>x.id===id) : {};
   if(id && !c) return;
+  const CATEGORIES = [
+    'Mobile Shop','Coaching Institute','School','Gym','Cosmetic / Beauty',
+    'Restaurant','Bakery Shop','Cafe','Grocery / Kirana','Boutique / Fashion',
+    'Salon','Hotel','Clinic / Doctor','Photography','Real Estate',
+    'Automobile','Electronics','Local Business','Personal Portfolio','Other'
+  ];
   const { close } = openModal(id?'Edit Client':'Add Client', `
     <form id="form-client" class="form-grid">
       <label class="full">Business / Client Name *
@@ -900,8 +906,7 @@ function openClientForm(id){
       <label>Category
         <select name="category">
           <option value="">Select…</option>
-          ${['Mobile Shop','Coaching Institute','School','Local Business','Restaurant','Personal Portfolio','Other']
-            .map(x=>`<option ${c.category===x?'selected':''}>${x}</option>`).join('')}
+          ${CATEGORIES.map(x=>`<option ${c.category===x?'selected':''}>${x}</option>`).join('')}
         </select></label>
       <label>Mobile Number *
         <input name="mobile" required inputmode="tel" value="${esc(c.mobile||'')}" placeholder="10-digit mobile"></label>
