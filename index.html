@@ -4,94 +4,132 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#0a0e1a">
-<title>ClientDesk — Client & Payment Tracker</title>
+<title>Asviro Client Hub</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --bg:#0a0e1a; --surface:#121a2e; --surface2:#1a2440; --border:#22304f;
+  --bg:#070a13; --surface:rgba(18, 26, 46, 0.7); --surface2:rgba(26, 36, 64, 0.8); --border:rgba(34, 48, 79, 0.6);
   --primary:#3b82f6; --primary2:#2563eb; --accent:#22d3ee;
   --text:#e6eefc; --muted:#8a9bb8;
   --success:#10b981; --warning:#f59e0b; --danger:#ef4444;
-  --radius:12px;
+  --radius:14px;
+  --glass-blur: blur(12px);
+  --shadow-glow: 0 0 20px rgba(34, 211, 238, 0.15);
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0; width:100%; overflow-x:hidden;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-  background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
-a{color:var(--accent);text-decoration:none}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  background-color:var(--bg);
+  background-image: radial-gradient(circle at 15% 50%, rgba(59,130,246,0.08), transparent 25%),
+                    radial-gradient(circle at 85% 30%, rgba(34,211,238,0.08), transparent 25%);
+  background-attachment: fixed;
+  color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none; transition: color 0.2s;}
+a:hover{color:#fff}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
-input,select,textarea{font-family:inherit;font-size:14px;width:100%;padding:10px 12px;
-  background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);outline:none;
-  transition:border-color .15s}
-input:focus,select:focus,textarea:focus{border-color:var(--primary)}
+input,select,textarea{font-family:inherit;font-size:14px;width:100%;padding:12px 14px;
+  background:rgba(10,14,26,0.6);border:1px solid var(--border);border-radius:10px;color:var(--text);outline:none;
+  transition:all .2s ease;}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent);
+  box-shadow: 0 0 0 3px rgba(34,211,238,0.15);
+  background:rgba(10,14,26,0.9);
+}
 input:invalid,select:invalid{border-color:var(--danger)}
 ::placeholder{color:#5a6b8a}
 
 /* Layout */
 .app{display:flex;min-height:100vh; width:100%;}
-.sidebar{width:250px;background:var(--surface);border-right:1px solid var(--border);
-  position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100;
-  transition:transform .25s ease;display:flex;flex-direction:column}
-.sidebar .brand{padding:20px 20px 16px;font-size:20px;font-weight:800;letter-spacing:-.5px;
-  background:linear-gradient(90deg,var(--primary),var(--accent));-webkit-background-clip:text;
-  background-clip:text;color:transparent}
-.sidebar nav{flex:1;padding:8px}
-.sidebar nav a{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:9px;
-  color:var(--muted);font-weight:500;margin-bottom:2px;transition:background .15s,color .15s}
-.sidebar nav a:hover{background:var(--surface2);color:var(--text)}
-.sidebar nav a.active{background:linear-gradient(90deg,rgba(59,130,246,.18),rgba(34,211,238,.08));
-  color:var(--text);box-shadow:inset 2px 0 0 var(--accent)}
-.sidebar .icon{width:20px;text-align:center;font-size:16px}
-.sidebar .foot{padding:14px 20px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)}
-.main{flex:1;margin-left:250px;min-width:0;display:flex;flex-direction:column; width:100%;}
-.topbar{position:sticky;top:0;z-index:50;background:rgba(10,14,26,.92);backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:12px 20px}
-.topbar h1{font-size:18px;margin:0;font-weight:700;flex-shrink:0}
-.topbar .search{flex:1;max-width:420px;position:relative}
-.topbar .search input{padding-left:34px;background:var(--surface)}
-.topbar .search::before{content:"🔍";position:absolute;left:11px;top:50%;transform:translateY(-50%);
-  font-size:13px;opacity:.6}
-.hamburger{display:none;font-size:22px;padding:4px 8px}
-.content{padding:20px;flex:1; width:100%;}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99}
+.sidebar{
+  width:260px;background:var(--surface);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100;
+  transition:transform .3s cubic-bezier(0.4, 0, 0.2, 1);display:flex;flex-direction:column;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+}
+.sidebar .brand{padding:24px 20px 20px;font-size:22px;font-weight:800;letter-spacing:-.5px;
+  background:linear-gradient(135deg, #60a5fa, var(--accent));-webkit-background-clip:text;
+  background-clip:text;color:transparent; text-shadow: 0 0 30px rgba(34,211,238,0.2);}
+.sidebar nav{flex:1;padding:8px 12px;}
+.sidebar nav a{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;
+  color:var(--muted);font-weight:500;margin-bottom:6px;transition:all .2s ease;}
+.sidebar nav a:hover{background:var(--surface2);color:var(--text);transform:translateX(4px);}
+.sidebar nav a.active{
+  background:linear-gradient(90deg,rgba(59,130,246,.2),rgba(34,211,238,.05));
+  color:var(--text);box-shadow:inset 3px 0 0 var(--accent); font-weight:600;
+}
+.sidebar .icon{width:22px;text-align:center;font-size:18px;transition:transform 0.3s;}
+.sidebar nav a:hover .icon{transform:scale(1.15);}
+.sidebar .foot{padding:16px 20px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);background:rgba(0,0,0,0.1);}
+.main{flex:1;margin-left:260px;min-width:0;display:flex;flex-direction:column; width:100%;}
+.topbar{
+  position:sticky;top:0;z-index:50;background:rgba(7,10,19,.7);backdrop-filter:var(--glass-blur);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:14px 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+.topbar h1{font-size:20px;margin:0;font-weight:700;flex-shrink:0;letter-spacing:-0.3px;}
+.topbar .search{flex:1;max-width:450px;position:relative}
+.topbar .search input{padding-left:38px;background:rgba(18, 26, 46, 0.6);border-radius:99px;}
+.topbar .search::before{content:"🔍";position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  font-size:14px;opacity:.6}
+.hamburger{display:none;font-size:24px;padding:4px 8px;transition:transform 0.2s;}
+.hamburger:active{transform:scale(0.9);}
+.content{padding:24px;flex:1; width:100%;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:99;animation:fadeIn 0.3s;}
 .overlay.show{display:block}
 
+/* Animations */
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes slideUp { from{opacity:0; transform:translateY(20px)} to{opacity:1; transform:translateY(0)} }
+@keyframes pulseGlow { 0%{box-shadow:0 0 0 0 rgba(59,130,246,0.4)} 70%{box-shadow:0 0 0 10px rgba(59,130,246,0)} 100%{box-shadow:0 0 0 0 rgba(59,130,246,0)} }
+.animate-enter { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
 /* Cards & Grids */
-.grid{display:grid;gap:14px; width:100%;}
+.grid{display:grid;gap:16px; width:100%;}
 .grid.cols-2{grid-template-columns:repeat(2,1fr)}
 .grid.cols-3{grid-template-columns:repeat(3,1fr)}
 .grid.cols-4{grid-template-columns:repeat(4,1fr)}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:16px;transition:border-color .15s; width:100%;}
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;transition:all .3s ease; width:100%; backdrop-filter:var(--glass-blur);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
 .card.clickable{cursor:pointer}
-.card.clickable:hover{border-color:var(--primary)}
-.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.stat-value{font-size:22px;font-weight:800;margin-top:6px;letter-spacing:-.5px}
-.stat-value.pos{color:var(--success)}
-.stat-value.neg{color:var(--danger)}
-.stat-value.warn{color:var(--warning)}
-.stat-sub{font-size:12px;color:var(--muted);margin-top:4px}
-.section-title{font-size:16px;font-weight:700;margin:24px 0 12px}
+.card.clickable:hover{
+  border-color:rgba(34,211,238,0.4);
+  transform:translateY(-3px);
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.3), var(--shadow-glow);
+}
+.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.stat-value{font-size:24px;font-weight:800;margin-top:8px;letter-spacing:-.5px}
+.stat-value.pos{color:var(--success); text-shadow: 0 0 15px rgba(16,185,129,0.3);}
+.stat-value.neg{color:var(--danger); text-shadow: 0 0 15px rgba(239,68,68,0.3);}
+.stat-value.warn{color:var(--warning); text-shadow: 0 0 15px rgba(245,158,11,0.3);}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:6px}
+.section-title{font-size:18px;font-weight:700;margin:28px 0 16px;display:flex;align-items:center;gap:10px;}
+.section-title::before { content:""; display:inline-block; width:4px; height:18px; background:var(--accent); border-radius:4px; }
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:9px;
-  font-weight:600;font-size:13px;transition:transform .08s,background .15s;white-space:nowrap}
-.btn:active{transform:scale(.97)}
-.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff}
-.btn-primary:hover{filter:brightness(1.1)}
-.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
-.btn-ghost:hover{border-color:var(--primary)}
-.btn-danger{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
-.btn-danger:hover{background:rgba(239,68,68,.25)}
-.btn-success{background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.35)}
-.btn-sm{padding:6px 10px;font-size:12px;border-radius:7px}
-.icon-btn{padding:6px 8px;border-radius:7px;font-size:14px;opacity:.75}
-.icon-btn:hover{opacity:1;background:var(--surface2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:10px;
+  font-weight:600;font-size:13px;transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);white-space:nowrap}
+.btn:active{transform:scale(.95)}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;
+  box-shadow: 0 4px 12px rgba(59,130,246,0.3);}
+.btn-primary:hover{filter:brightness(1.15); box-shadow: 0 6px 16px rgba(59,130,246,0.5); transform:translateY(-1px);}
+.btn-ghost{background:rgba(34, 48, 79, 0.4);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent); background:rgba(34, 48, 79, 0.7); transform:translateY(-1px);}
+.btn-danger{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.4)}
+.btn-danger:hover{background:rgba(239,68,68,.25); box-shadow:0 4px 12px rgba(239,68,68,0.2);}
+.btn-success{background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.4)}
+.btn-sm{padding:7px 12px;font-size:12px;border-radius:8px}
+.icon-btn{padding:6px 8px;border-radius:8px;font-size:15px;opacity:.7;transition:all 0.2s;}
+.icon-btn:hover{opacity:1;background:var(--surface2);transform:scale(1.1);}
 
 /* Badges */
-.badge{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;
-  letter-spacing:.3px;white-space:nowrap}
+.badge{display:inline-block;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;
+  letter-spacing:.3px;white-space:nowrap; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);}
 .badge.gray{background:rgba(138,155,184,.15);color:#b4c1d9}
 .badge.blue{background:rgba(59,130,246,.18);color:#93c5fd}
 .badge.cyan{background:rgba(34,211,238,.18);color:#67e8f9}
@@ -101,122 +139,113 @@ input:invalid,select:invalid{border-color:var(--danger)}
 .badge.purple{background:rgba(168,85,247,.18);color:#d8b4fe}
 
 /* Tables */
-.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;
-  border:1px solid var(--border);background:var(--surface); width:100%;}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;
+  border:1px solid var(--border);background:var(--surface); width:100%; backdrop-filter:var(--glass-blur);}
 table{width:100%;border-collapse:collapse;min-width:600px}
-th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:13px}
+th,td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:13px}
 th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);
-  font-weight:700;background:var(--surface2);position:sticky;top:0}
+  font-weight:700;background:rgba(26, 36, 64, 0.8);position:sticky;top:0; z-index:10;}
 tr:last-child td{border-bottom:none}
-tbody tr{cursor:pointer;transition:background .12s}
-tbody tr:hover{background:var(--surface2)}
+tbody tr{cursor:pointer;transition:all .2s ease;}
+tbody tr:hover{background:rgba(34, 48, 79, 0.5); transform:scale(1.005); box-shadow:0 4px 12px rgba(0,0,0,0.2);}
 .num{text-align:right;font-variant-numeric:tabular-nums}
 
 /* Empty states */
-.empty{text-align:center;padding:40px 20px;color:var(--muted)}
-.empty .icon{font-size:42px;margin-bottom:10px;opacity:.5}
-.empty h3{margin:0 0 6px;color:var(--text);font-size:15px}
-.empty p{margin:0 0 14px;font-size:13px}
+.empty{text-align:center;padding:40px 20px;color:var(--muted); animation:fadeIn 0.5s;}
+.empty .icon{font-size:48px;margin-bottom:12px;opacity:.7; filter:drop-shadow(0 0 10px rgba(255,255,255,0.1));}
+.empty h3{margin:0 0 8px;color:var(--text);font-size:16px}
+.empty p{margin:0 0 16px;font-size:13px}
 
 /* Forms */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;
-  color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .form-grid label.full{grid-column:1/-1}
 .form-grid label input,.form-grid label select,.form-grid label textarea{
-  text-transform:none;letter-spacing:0;font-weight:400;color:var(--text)}
-.form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;
-  padding-top:16px;border-top:1px solid var(--border)}
+  text-transform:none;letter-spacing:0;font-weight:400;color:var(--text); font-size:14px;}
+.form-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:20px;
+  padding-top:20px;border-top:1px solid var(--border)}
 .form-error{color:var(--danger);font-size:12px;margin-top:8px;display:none}
 .form-error.show{display:block}
 
 /* Modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;
-  align-items:flex-end;justify-content:center;padding:0;overflow-y:auto;animation:fade .2s}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px 16px 0 0;
-  width:100%;max-width:640px;max-height:92vh;overflow-y:auto;animation:slideUp .25s}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:200;display:flex;
+  align-items:flex-end;justify-content:center;padding:0;overflow-y:auto;animation:fadeIn .2s}
+.modal{background:#111827;border:1px solid var(--border);border-radius:20px 20px 0 0;
+  width:100%;max-width:640px;max-height:92vh;overflow-y:auto;animation:slideUp .3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.5);}
 .modal.wide{max-width:820px}
-@keyframes fade{from{opacity:0}}
-@keyframes slideUp{from{transform:translateY(30px);opacity:0}}
-.modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;
-  border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2}
-.modal-header h2{margin:0;font-size:17px;font-weight:700}
-.modal-body{padding:18px 20px 22px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;
+  border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(17,24,39,0.95);backdrop-filter:blur(10px);z-index:2}
+.modal-header h2{margin:0;font-size:18px;font-weight:700}
+.modal-body{padding:20px 24px 24px}
 @media(min-width:640px){
   .modal-overlay{align-items:center;padding:20px}
-  .modal{border-radius:16px}
+  .modal{border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.6); border:1px solid rgba(34,211,238,0.2);}
 }
 
 /* Toast */
-#toasts{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
-.toast{background:var(--surface2);border:1px solid var(--border);padding:11px 16px;border-radius:10px;
-  font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slideIn .25s;
-  max-width:320px}
-.toast.success{border-color:rgba(16,185,129,.4)}
-.toast.error{border-color:rgba(239,68,68,.4)}
-@keyframes slideIn{from{transform:translateX(20px);opacity:0}}
+#toasts{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px}
+.toast{background:rgba(26, 36, 64, 0.95);backdrop-filter:blur(10px);border:1px solid var(--border);padding:14px 20px;border-radius:12px;
+  font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:slideInRight .3s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width:320px; color:#fff; display:flex; align-items:center; gap:10px;}
+.toast.success{border-left:4px solid var(--success);}
+.toast.error{border-left:4px solid var(--danger);}
+@keyframes slideInRight{from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1}}
 
 /* Tabs / filters */
-.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center}
-.filters input,.filters select{padding:8px 10px;font-size:13px;width:auto;min-width:140px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center}
+.filters input,.filters select{padding:10px 14px;font-size:13px;width:auto;min-width:160px;border-radius:99px;}
 
 /* Progress */
-.progress{height:6px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:8px}
+.progress{height:8px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:10px; box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);}
 .progress > div{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));
-  border-radius:99px;transition:width .4s}
+  border-radius:99px;transition:width .6s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:0 0 10px var(--accent);}
 
 /* Client profile header */
-.profile-head{background:linear-gradient(135deg,var(--surface),var(--surface2));
-  border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
-.profile-head h2{margin:0 0 6px;font-size:22px}
+.profile-head{background:linear-gradient(135deg,rgba(18, 26, 46, 0.9),rgba(26, 36, 64, 0.9));
+  border:1px solid rgba(34,211,238,0.2);border-radius:var(--radius);padding:24px;margin-bottom:20px;
+  backdrop-filter:var(--glass-blur); box-shadow:0 8px 32px rgba(0,0,0,0.3);}
+.profile-head h2{margin:0 0 8px;font-size:24px; letter-spacing:-0.5px;}
 .profile-head .meta{color:var(--muted);font-size:13px}
 
 /* Chart */
-.chart-box{position:relative;height:260px;padding:10px; width:100%;}
+.chart-box{position:relative;height:280px;padding:10px; width:100%;}
 .chart-box canvas{max-height:100%; width:100% !important;}
 
+/* Utility */
+.flex{display:flex}.gap{gap:10px}.between{justify-content:space-between}.center{align-items:center}
+.mt-1{margin-top:6px}.mt-2{margin-top:16px}
+
 /* ============================================================
-   RESPONSIVE FIXES (Mobile & Tablet)
+   RESPONSIVE FIXES
    ============================================================ */
 @media(max-width:900px){
   .sidebar{transform:translateX(-100%)}
-  .sidebar.open{transform:translateX(0)}
+  .sidebar.open{transform:translateX(0); box-shadow:10px 0 50px rgba(0,0,0,0.8);}
   .main{margin-left:0}
   .hamburger{display:block}
-  
-  /* Tablet me top cards 2-2 karke, baaki 1 line me */
   .grid.cols-4, .grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
   .grid.cols-2 { grid-template-columns: 1fr; } 
-  
-  .content{padding:14px}
-  .topbar h1{font-size:16px}
+  .content{padding:16px}
+  .topbar h1{font-size:18px}
 }
 
 @media(max-width:520px){
-  /* Mobile: Sirf Top Numbers ke liye 2x2 grid */
-  .grid.cols-4 { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  
-  /* Baaki sab (Charts, Reminders, Forms) 1 line me */
-  .grid.cols-2, .grid.cols-3 { grid-template-columns: 1fr; gap: 12px; }
+  .grid.cols-4 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .grid.cols-2, .grid.cols-3 { grid-template-columns: 1fr; gap: 14px; }
   .form-grid { grid-template-columns: 1fr; }
   .topbar .search { display: none; }
-  
-  /* Chote aur compact Top Cards */
   .grid.cols-4 .card { 
-    padding: 12px 8px; 
-    min-height: 80px; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: center; 
-    align-items: center; 
-    text-align: center; 
+    padding: 14px 10px; 
+    min-height: 85px; 
+    display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; 
   }
-  .grid.cols-4 .stat-value { font-size: 16px; margin-top: 2px; }
-  .grid.cols-4 .stat-label { font-size: 10px; line-height: 1.1; letter-spacing: 0; }
-  .grid.cols-4 .stat-sub { font-size: 10px; margin-top: 2px; }
-
-  /* Charts ko mobile pe thoda chhota karo */
-  .chart-box { height: 220px; }
+  .grid.cols-4 .stat-value { font-size: 18px; margin-top: 4px; }
+  .grid.cols-4 .stat-label { font-size: 10px; line-height: 1.2; letter-spacing: 0; }
+  .grid.cols-4 .stat-sub { font-size: 10px; margin-top: 4px; }
+  .chart-box { height: 240px; }
+  .modal-body{padding:16px}
 }
 </style>
 </head>
@@ -224,7 +253,7 @@ tbody tr:hover{background:var(--surface2)}
 
 <div class="app">
   <aside class="sidebar" id="sidebar">
-    <div class="brand">ClientDesk</div>
+    <div class="brand">Asviro Client Hub</div>
     <nav id="nav"></nav>
     <div class="foot">
       <div id="sync-status" style="margin-bottom:8px;">Mode: <span style="color:var(--warning)">Connecting...</span></div>
@@ -235,7 +264,7 @@ tbody tr:hover{background:var(--surface2)}
     <div class="topbar">
       <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
       <h1 id="page-title">Dashboard</h1>
-      <div class="search"><input id="global-search" placeholder="Search clients, phone, projects…" autocomplete="off"></div>
+      <div class="search"><input id="global-search" placeholder="Search clients, projects…" autocomplete="off"></div>
       <button class="btn btn-primary" id="quick-add">+ New</button>
     </div>
     <div class="content" id="content"></div>
@@ -247,13 +276,13 @@ tbody tr:hover{background:var(--surface2)}
 'use strict';
 
 /* ============================================================
-   CONFIGURATION (Tumhari Keys yahan daal di gayi hain)
+   CONFIGURATION 
    ============================================================ */
 const SUPABASE_URL = 'https://vysxnpnxfonafcnylxmu.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_KD73RIU-GxjcyqnEtR-AiQ_EQxL5PZF'; 
 
 /* ============================================================
-   ClientDesk — Complete Client & Payment Tracker
+   Asviro Client Hub — Logic
    ============================================================ */
 
 const $ = s => document.querySelector(s);
@@ -267,7 +296,6 @@ const fmtDate = d => { if(!d) return '—'; const dt = new Date(d); if(isNaN(dt)
   return dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); };
 const daysBetween = (a,b) => Math.round((new Date(b) - new Date(a))/86400000);
 
-// Helper: Supabase ke liye data ko clean karna (khali strings ko null banana)
 function sanitizeRecord(obj, dateFields = [], numFields = [], fkFields = []) {
   const newObj = { ...obj };
   dateFields.forEach(f => { if(!newObj[f]) newObj[f] = null; });
@@ -283,9 +311,9 @@ function sanitizeRecord(obj, dateFields = [], numFields = [], fkFields = []) {
 function toast(msg, type='success'){
   const t = document.createElement('div');
   t.className = 'toast ' + type;
-  t.textContent = msg;
+  t.innerHTML = `<span>${type==='success'?'✅':'⚠️'}</span> <span>${esc(msg)}</span>`;
   $('#toasts').appendChild(t);
-  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 2800);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(100%)'; t.style.transition='all .3s'; setTimeout(()=>t.remove(),300); }, 3000);
 }
 
 function confirmAction(msg){
@@ -295,8 +323,8 @@ function confirmAction(msg){
     o.innerHTML = `<div class="modal" style="max-width:420px">
       <div class="modal-header"><h2>Confirm</h2></div>
       <div class="modal-body">
-        <p style="margin:0 0 16px;color:var(--muted)">${esc(msg)}</p>
-        <div class="form-actions">
+        <p style="margin:0 0 20px;color:var(--muted);font-size:15px">${esc(msg)}</p>
+        <div class="form-actions" style="border:none;padding:0;margin:0">
           <button class="btn btn-ghost" data-no>Cancel</button>
           <button class="btn btn-danger" data-yes>Confirm</button>
         </div>
@@ -313,7 +341,7 @@ function openModal(title, bodyHtml, opts={}){
   o.className = 'modal-overlay';
   o.innerHTML = `<div class="modal ${opts.wide?'wide':''}">
     <div class="modal-header"><h2>${esc(title)}</h2>
-      <button class="icon-btn" data-close aria-label="Close">✕</button></div>
+      <button class="icon-btn" data-close aria-label="Close" style="background:rgba(255,255,255,0.05);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;">✕</button></div>
     <div class="modal-body">${bodyHtml}</div>
   </div>`;
   document.body.appendChild(o);
@@ -332,7 +360,6 @@ if (SUPABASE_URL && SUPABASE_KEY) {
   useCloud = true;
 }
 
-// Local fallback IndexedDB
 const DB_NAME='clientdesk_v1', DB_VERSION=1;
 let _db;
 function openDB(){
@@ -488,7 +515,7 @@ function makeChart(id, config){
   chartInstances[id] = new Chart(el, config);
 }
 Chart.defaults.color = '#8a9bb8';
-Chart.defaults.borderColor = '#22304f';
+Chart.defaults.borderColor = 'rgba(34, 48, 79, 0.5)';
 Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif";
 
 /* ---------- Router ---------- */
@@ -504,7 +531,15 @@ function route(){
   const name = parts[0] || 'dashboard';
   const fn = routes[name] || renderDashboard;
   destroyCharts();
+  
   fn(parts.slice(1));
+  
+  // Add animation to content
+  const content = $('#content');
+  content.classList.remove('animate-enter');
+  void content.offsetWidth; // trigger reflow
+  content.classList.add('animate-enter');
+
   $$('#nav a').forEach(a=>a.classList.toggle('active', a.dataset.route===name));
   $('#sidebar').classList.remove('open');
   $('#overlay').classList.remove('show');
@@ -534,16 +569,16 @@ $('#global-search').addEventListener('keydown', e => {
 function quickAddMenu(){
   const { close } = openModal('Add New', `
     <div class="grid" style="grid-template-columns:1fr 1fr">
-      <button class="btn btn-ghost" data-add="client" style="padding:20px;flex-direction:column;gap:8px;font-size:15px">
-        <span style="font-size:24px">👤</span> Client</button>
-      <button class="btn btn-ghost" data-add="project" style="padding:20px;flex-direction:column;gap:8px;font-size:15px">
-        <span style="font-size:24px">🗂️</span> Project</button>
-      <button class="btn btn-ghost" data-add="payment" style="padding:20px;flex-direction:column;gap:8px;font-size:15px">
-        <span style="font-size:24px">💰</span> Payment</button>
-      <button class="btn btn-ghost" data-add="expense" style="padding:20px;flex-direction:column;gap:8px;font-size:15px">
-        <span style="font-size:24px">🧾</span> Expense</button>
-      <button class="btn btn-ghost" data-add="followup" style="padding:20px;flex-direction:column;gap:8px;font-size:15px;grid-column:1/-1">
-        <span style="font-size:24px">🔔</span> Follow-up</button>
+      <button class="btn btn-ghost" data-add="client" style="padding:24px;flex-direction:column;gap:10px;font-size:15px; border-radius:16px;">
+        <span style="font-size:32px; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5))">👤</span> Client</button>
+      <button class="btn btn-ghost" data-add="project" style="padding:24px;flex-direction:column;gap:10px;font-size:15px; border-radius:16px;">
+        <span style="font-size:32px; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5))">🗂️</span> Project</button>
+      <button class="btn btn-ghost" data-add="payment" style="padding:24px;flex-direction:column;gap:10px;font-size:15px; border-radius:16px;">
+        <span style="font-size:32px; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5))">💰</span> Payment</button>
+      <button class="btn btn-ghost" data-add="expense" style="padding:24px;flex-direction:column;gap:10px;font-size:15px; border-radius:16px;">
+        <span style="font-size:32px; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5))">🧾</span> Expense</button>
+      <button class="btn btn-ghost" data-add="followup" style="padding:24px;flex-direction:column;gap:10px;font-size:15px;grid-column:1/-1; border-radius:16px;">
+        <span style="font-size:32px; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5))">🔔</span> Follow-up</button>
     </div>
   `);
   document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
@@ -597,22 +632,22 @@ function renderDashboard(){
     <h3 class="section-title">Reminders</h3>
     <div class="grid cols-2">
       <div class="card">
-        <div class="flex between center" style="margin-bottom:12px"><div class="stat-label">Upcoming Deadlines</div><button class="btn btn-sm btn-ghost" onclick="location.hash='#/projects'">View all</button></div>
+        <div class="flex between center" style="margin-bottom:16px"><div class="stat-label">Upcoming Deadlines</div><button class="btn btn-sm btn-ghost" onclick="location.hash='#/projects'">View all</button></div>
         ${deadlines.length ? deadlines.slice(0,5).map(p=>{
           const c = S.clients.find(x=>x.id===p.clientId);
-          return `<div class="flex between center" style="padding:8px 0;border-bottom:1px solid var(--border)">
-            <div><div style="font-weight:600">${esc(p.name)}</div><div class="stat-sub">${esc(c?c.name:'—')} · Due ${fmtDate(p.deadline)}</div></div>
+          return `<div class="flex between center" style="padding:12px 0;border-bottom:1px solid var(--border)">
+            <div><div style="font-weight:600;font-size:14px;">${esc(p.name)}</div><div class="stat-sub">${esc(c?c.name:'—')} · Due ${fmtDate(p.deadline)}</div></div>
             <span class="badge ${daysBetween(todayStr(), p.deadline)<=3?'red':'yellow'}">${daysBetween(todayStr(), p.deadline)}d</span>
           </div>`;
         }).join('') : `<div class="empty"><div class="icon">📅</div><p>No upcoming deadlines in next 14 days.</p></div>`}
       </div>
       <div class="card">
-        <div class="flex between center" style="margin-bottom:12px"><div class="stat-label">Follow-ups Due</div><button class="btn btn-sm btn-ghost" onclick="location.hash='#/followups'">View all</button></div>
+        <div class="flex between center" style="margin-bottom:16px"><div class="stat-label">Follow-ups Due</div><button class="btn btn-sm btn-ghost" onclick="location.hash='#/followups'">View all</button></div>
         ${followups.length ? followups.slice(0,5).map(f=>{
           const c = S.clients.find(x=>x.id===f.clientId);
           const overdue = f.date < todayStr();
-          return `<div class="flex between center" style="padding:8px 0;border-bottom:1px solid var(--border)">
-            <div><div style="font-weight:600">${esc(c?c.name:'—')}</div><div class="stat-sub">${esc(f.purpose)} · ${fmtDate(f.date)}</div></div>
+          return `<div class="flex between center" style="padding:12px 0;border-bottom:1px solid var(--border)">
+            <div><div style="font-weight:600;font-size:14px;">${esc(c?c.name:'—')}</div><div class="stat-sub">${esc(f.purpose)} · ${fmtDate(f.date)}</div></div>
             <span class="badge ${overdue?'red':'yellow'}">${overdue?'Overdue':'Today'}</span>
           </div>`;
         }).join('') : `<div class="empty"><div class="icon">✅</div><p>No follow-ups due. You're on top of it!</p></div>`}
@@ -626,30 +661,30 @@ function renderDashboard(){
   const monthLabels = months.map(m=>{ const [y,mo]=m.split('-'); return new Date(y,mo-1).toLocaleDateString('en-IN',{month:'short',year:'2-digit'}); });
 
   if(paymentsData.some(v=>v>0)){
-    makeChart('chart-payments',{ type:'bar', data:{labels:monthLabels,datasets:[{label:'Received',data:paymentsData,backgroundColor:'rgba(34,211,238,.55)',borderColor:'#22d3ee',borderWidth:1,borderRadius:6}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>fmtMoneyS(v)}}}} });
+    makeChart('chart-payments',{ type:'bar', data:{labels:monthLabels,datasets:[{label:'Received',data:paymentsData,backgroundColor:'rgba(34,211,238,.7)',borderColor:'#22d3ee',borderWidth:1,borderRadius:6}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{callback:v=>fmtMoneyS(v)}},x:{grid:{display:false}}}} });
   } else emptyChart('chart-payments','No payments recorded yet');
 
   if(expensesData.some(v=>v>0)){
-    makeChart('chart-expenses',{ type:'bar', data:{labels:monthLabels,datasets:[{label:'Expenses',data:expensesData,backgroundColor:'rgba(239,68,68,.5)',borderColor:'#ef4444',borderWidth:1,borderRadius:6}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>fmtMoneyS(v)}}}} });
+    makeChart('chart-expenses',{ type:'bar', data:{labels:monthLabels,datasets:[{label:'Expenses',data:expensesData,backgroundColor:'rgba(239,68,68,.7)',borderColor:'#ef4444',borderWidth:1,borderRadius:6}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{callback:v=>fmtMoneyS(v)}},x:{grid:{display:false}}}} });
   } else emptyChart('chart-expenses','No expenses recorded yet');
 
   const statusCounts = {};
   S.projects.forEach(p=>{ statusCounts[p.status]=(statusCounts[p.status]||0)+1; });
   const statusLabels = Object.keys(statusCounts);
   if(statusLabels.length){
-    makeChart('chart-status',{ type:'doughnut', data:{labels:statusLabels,datasets:[{data:Object.values(statusCounts),backgroundColor:['#3b82f6','#22d3ee','#f59e0b','#a855f7','#10b981','#ef4444','#64748b']}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}} });
+    makeChart('chart-status',{ type:'doughnut', data:{labels:statusLabels,datasets:[{data:Object.values(statusCounts),backgroundColor:['#3b82f6','#22d3ee','#f59e0b','#a855f7','#10b981','#ef4444','#64748b'],borderWidth:0}]}, options:{cutout:'70%',responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8,padding:20}}}} });
   } else emptyChart('chart-status','No projects yet');
 
   const clientOutstanding = S.clients.map(c=>({name:c.name, bal:Calc.clientOutstanding(c.id)})).filter(x=>x.bal>0).sort((a,b)=>b.bal-a.bal).slice(0,6);
   if(clientOutstanding.length){
-    makeChart('chart-outstanding',{ type:'bar', data:{labels:clientOutstanding.map(x=>x.name),datasets:[{label:'Outstanding',data:clientOutstanding.map(x=>x.bal),backgroundColor:'rgba(245,158,11,.55)',borderColor:'#f59e0b',borderWidth:1,borderRadius:6}]}, options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{callback:v=>fmtMoneyS(v)}}}} });
+    makeChart('chart-outstanding',{ type:'bar', data:{labels:clientOutstanding.map(x=>x.name),datasets:[{label:'Outstanding',data:clientOutstanding.map(x=>x.bal),backgroundColor:'rgba(245,158,11,.7)',borderColor:'#f59e0b',borderWidth:1,borderRadius:6}]}, options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{callback:v=>fmtMoneyS(v)}},y:{grid:{display:false}}}} });
   } else emptyChart('chart-outstanding','No outstanding balances');
 }
 
 function emptyChart(id, msg){
   const el = document.getElementById(id);
   if(!el) return;
-  el.parentElement.innerHTML = `<div class="empty" style="padding:80px 20px"><div class="icon">📭</div><p>${esc(msg)}</p></div>`;
+  el.parentElement.innerHTML = `<div class="empty" style="padding:60px 20px"><div class="icon">📭</div><p>${esc(msg)}</p></div>`;
 }
 function last6Months(){
   const arr=[]; const d=new Date();
@@ -711,19 +746,19 @@ function renderClients(parts){
         <option value="deadline" ${sort==='deadline'?'selected':''}>Nearest deadline</option>
         <option value="payment" ${sort==='payment'?'selected':''}>Latest payment</option>
       </select>
-      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer"><input type="checkbox" id="f-arch" ${showArchived?'checked':''} style="width:auto"> Show archived</label>
-      <button class="btn btn-primary" onclick="openClientForm()">+ Add Client</button>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;background:var(--surface);padding:8px 14px;border-radius:99px;border:1px solid var(--border);"><input type="checkbox" id="f-arch" ${showArchived?'checked':''} style="width:auto;accent-color:var(--accent);"> Show archived</label>
+      <button class="btn btn-primary" style="margin-left:auto;" onclick="openClientForm()">+ Add Client</button>
     </div>
     ${list.length ? `
-      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Client</th><th>Contact</th><th>Projects</th><th class="num">Outstanding</th><th>Status</th></tr></thead>
+      <div class="table-wrap animate-enter"><table><thead><tr><th>ID</th><th>Client</th><th>Contact</th><th>Projects</th><th class="num">Outstanding</th><th>Status</th></tr></thead>
         <tbody>${list.map(c=>{
               const out = Calc.clientOutstanding(c.id); const pc = Calc.clientProjects(c.id).length;
               return `<tr onclick="location.hash='#/client/${c.id}'">
                 <td><span class="badge gray">${esc(c.displayId)}</span></td>
-                <td><strong>${esc(c.name)}</strong>${c.owner?`<div class="stat-sub">${esc(c.owner)}</div>`:''}</td>
+                <td><strong style="font-size:14px;color:#fff;">${esc(c.name)}</strong>${c.owner?`<div class="stat-sub">${esc(c.owner)}</div>`:''}</td>
                 <td>${esc(c.mobile||'—')}<div class="stat-sub">${esc(c.city||'')}</div></td>
-                <td>${pc}</td>
-                <td class="num ${out>0?'':'pos'}" style="color:${out>0?'var(--warning)':'var(--success)'}">${fmtMoney(out)}</td>
+                <td><span class="badge blue">${pc}</span></td>
+                <td class="num ${out>0?'':'pos'}" style="color:${out>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(out)}</td>
                 <td>${clientStatusBadge(c.status)}</td></tr>`;
             }).join('')}</tbody></table></div>` :
       `<div class="empty"><div class="icon">👥</div><h3>No clients yet</h3><p>Add your first client to get started.</p><button class="btn btn-primary" onclick="openClientForm()">+ Add Client</button></div>`}
@@ -769,9 +804,9 @@ function renderClientProfile(parts){
   const pct = agreed>0 ? Math.min(100, (received/agreed)*100) : 0;
 
   $('#content').innerHTML = `
-    <div class="profile-head">
-      <div class="flex between center" style="flex-wrap:wrap;gap:10px">
-        <div><h2>${esc(c.name)} <span class="badge gray">${esc(c.displayId)}</span></h2><div class="meta">${esc(c.owner||'—')} · ${esc(c.category||'—')} · ${esc(c.mobile||'—')}</div></div>
+    <div class="profile-head animate-enter">
+      <div class="flex between center" style="flex-wrap:wrap;gap:12px">
+        <div><h2>${esc(c.name)} <span class="badge cyan">${esc(c.displayId)}</span></h2><div class="meta">${esc(c.owner||'—')} · ${esc(c.category||'—')} · ${esc(c.mobile||'—')}</div></div>
         <div class="flex gap">
           <button class="btn btn-ghost btn-sm" onclick="openClientForm('${c.id}')">Edit</button>
           <button class="btn btn-ghost btn-sm" onclick="toggleArchiveClient('${c.id}')">${c.archived?'Unarchive':'Archive'}</button>
@@ -781,44 +816,44 @@ function renderClientProfile(parts){
       <div class="grid cols-4 mt-2">${statCard('Agreed', fmtMoneyS(agreed))}${statCard('Received', fmtMoneyS(received), '', 'pos')}${statCard('Outstanding', fmtMoneyS(out), '', out>0?'warn':'pos')}${statCard('Expenses', fmtMoneyS(exp))}</div>
       <div class="progress"><div style="width:${pct}%"></div></div><div class="stat-sub mt-1">${pct.toFixed(0)}% received</div>
     </div>
-    <div class="grid cols-2">
+    <div class="grid cols-2 animate-enter" style="animation-delay:0.1s;">
       <div class="card">
         <div class="stat-label">Contact & Business</div>
-        <div class="mt-1" style="font-size:13px;line-height:1.9">
+        <div class="mt-2" style="font-size:13px;line-height:2;">
           ${row('WhatsApp', c.whatsapp?waLink(c.whatsapp,'Hello '+c.name+', ')+' target="_blank" rel="noopener"':null, c.whatsapp||'—')}
           ${c.email?row('Email', `mailto:${c.email}`, c.email):''}
           ${c.websiteUrl?row('Website', c.websiteUrl, c.websiteUrl):''}
-          ${c.mapsUrl?row('Maps', c.mapsUrl, 'Open'):''}
+          ${c.mapsUrl?row('Maps', c.mapsUrl, 'Open Location'):''}
           ${c.address?row('Address','',c.address):''}
           ${c.city||c.state?row('City / State','',[c.city,c.state].filter(Boolean).join(', ')):''}
           ${c.source?row('Source','',c.source):''}
           ${c.firstContactDate?row('First Contact','',fmtDate(c.firstContactDate)):''}
         </div>
-        ${c.notes?`<div class="mt-2"><div class="stat-label">Notes</div><div class="mt-1" style="font-size:13px;white-space:pre-wrap">${esc(c.notes)}</div></div>`:''}
+        ${c.notes?`<div class="mt-2"><div class="stat-label">Notes</div><div class="mt-1" style="font-size:13px;white-space:pre-wrap;background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;">${esc(c.notes)}</div></div>`:''}
         ${c.links?`<div class="mt-2"><div class="stat-label">Documents & Links</div>
           <div class="mt-1" style="font-size:13px">${parseLinks(c.links).map(l=>
-            `<div>${l.url?`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`:esc(l.label)}</div>`
+            `<div style="margin-bottom:4px;">${l.url?`<a href="${esc(l.url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;"><span>🔗</span>${esc(l.label)}</a>`:esc(l.label)}</div>`
           ).join('')}</div></div>`:''}
       </div>
       <div class="card">
         <div class="flex between center"><div class="stat-label">Follow-ups</div><button class="btn btn-sm btn-ghost" onclick="openFollowupForm(null, '${c.id}')">+ Add</button></div>
-        <div class="mt-1">${followups.length ? followups.map(f=>`<div class="flex between center" style="padding:8px 0;border-bottom:1px solid var(--border)"><div><div style="font-weight:600">${esc(f.purpose)}</div><div class="stat-sub">${fmtDate(f.date)} · ${esc(f.notes||'')}</div></div><span class="badge ${f.status==='Completed'?'green':f.status==='Rescheduled'?'yellow':(f.date<todayStr()?'red':'blue')}">${esc(f.status)}</span></div>`).join('') : `<div class="empty" style="padding:20px"><p>No follow-ups yet.</p></div>`}</div>
+        <div class="mt-2">${followups.length ? followups.map(f=>`<div class="flex between center" style="padding:10px 0;border-bottom:1px solid var(--border)"><div><div style="font-weight:600">${esc(f.purpose)}</div><div class="stat-sub">${fmtDate(f.date)} · ${esc(f.notes||'')}</div></div><span class="badge ${f.status==='Completed'?'green':f.status==='Rescheduled'?'yellow':(f.date<todayStr()?'red':'blue')}">${esc(f.status)}</span></div>`).join('') : `<div class="empty" style="padding:20px"><p>No follow-ups yet.</p></div>`}</div>
       </div>
     </div>
     <h3 class="section-title">Projects <button class="btn btn-sm btn-primary" style="margin-left:8px" onclick="openProjectForm(null,'${c.id}')">+ Add Project</button></h3>
     ${projects.length ? projects.map(p=>{
       const rec = Calc.projReceived(p.id); const bal = Calc.projBalance(p); const st = Calc.projPayStatus(p);
-      return `<div class="card clickable" onclick="openProjectDetail('${p.id}')"><div class="flex between center" style="flex-wrap:wrap;gap:8px"><div><strong>${esc(p.name)}</strong> <span class="badge gray">${esc(p.displayId)}</span> ${projectStatusBadge(p.status)}</div><div class="flex gap center">${payStatusBadge(st)}<span class="stat-value" style="font-size:15px">${fmtMoney(bal)}<span class="stat-sub"> balance</span></span></div></div><div class="stat-sub mt-1">Agreed ${fmtMoney(p.agreedPrice)} · Received ${fmtMoney(rec)} · Deadline ${fmtDate(p.deadline)}</div></div>`;
+      return `<div class="card clickable" onclick="openProjectDetail('${p.id}')"><div class="flex between center" style="flex-wrap:wrap;gap:10px"><div><strong style="font-size:15px;color:#fff;">${esc(p.name)}</strong> <span class="badge gray">${esc(p.displayId)}</span> ${projectStatusBadge(p.status)}</div><div class="flex gap center">${payStatusBadge(st)}<span class="stat-value" style="font-size:16px;margin-top:0;">${fmtMoney(bal)}<span class="stat-sub" style="display:inline; font-size:12px;"> balance</span></span></div></div><div class="stat-sub mt-1">Agreed ${fmtMoney(p.agreedPrice)} · Received ${fmtMoney(rec)} · Deadline ${fmtDate(p.deadline)}</div></div>`;
     }).join('') : `<div class="card empty"><p>No projects yet.</p></div>`}
     <h3 class="section-title">Payment History</h3>
-    ${payments.length ? `<div class="table-wrap"><table><thead><tr><th>Receipt</th><th>Date</th><th>Project</th><th>Type</th><th class="num">Amount</th><th>Method</th><th>Status</th><th></th></tr></thead><tbody>
+    ${payments.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>Receipt</th><th>Date</th><th>Project</th><th>Type</th><th class="num">Amount</th><th>Method</th><th>Status</th><th></th></tr></thead><tbody>
           ${payments.map(p=>{ const proj = S.projects.find(x=>x.id===p.projectId);
-            return `<tr><td>${esc(p.displayId)}</td><td>${fmtDate(p.date)}</td><td>${esc(proj?proj.name:'—')}</td><td>${esc(p.type||'Payment')} / ${esc(p.purpose||'—')}</td><td class="num">${p.type==='Refund'?'-':''}${fmtMoney(p.amount)}</td><td>${esc(p.method||'—')}</td><td><span class="badge ${p.status==='Confirmed'?'green':'yellow'}">${esc(p.status)}</span></td>
+            return `<tr><td>${esc(p.displayId)}</td><td>${fmtDate(p.date)}</td><td>${esc(proj?proj.name:'—')}</td><td>${esc(p.type||'Payment')} / ${esc(p.purpose||'—')}</td><td class="num" style="color:var(--success);font-weight:600;">${p.type==='Refund'?'-':''}${fmtMoney(p.amount)}</td><td>${esc(p.method||'—')}</td><td><span class="badge ${p.status==='Confirmed'?'green':'yellow'}">${esc(p.status)}</span></td>
               <td style="white-space:nowrap"><button class="icon-btn" onclick="event.stopPropagation();openPaymentForm('${p.id}')">✏️</button><button class="icon-btn" onclick="event.stopPropagation();printReceipt('${p.id}')">🖨️</button><button class="icon-btn" onclick="event.stopPropagation();deletePayment('${p.id}')">🗑️</button></td></tr>`;
           }).join('')}</tbody></table></div>` : `<div class="card empty"><p>No payments recorded yet.</p></div>`}
   `;
 }
-function row(label, href, value){ return `<div><strong style="color:var(--muted);font-weight:600;display:inline-block;min-width:90px">${esc(label)}</strong>${href?`<a href="${esc(href)}" target="_blank" rel="noopener">${esc(value)}</a>`:esc(value)}</div>`; }
+function row(label, href, value){ return `<div><strong style="color:var(--muted);font-weight:600;display:inline-block;min-width:100px">${esc(label)}</strong>${href?`<a href="${esc(href)}" target="_blank" rel="noopener">${esc(value)}</a>`:esc(value)}</div>`; }
 function waLink(number, message){ const n = (number||'').replace(/\D/g,''); return n ? `https://wa.me/${n}${message?'?text='+encodeURIComponent(message):''}` : '#'; }
 function parseLinks(text){
   return (text||'').split('\n').map(line=>{
@@ -836,10 +871,10 @@ function renderProjects(){
   let list = S.projects.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openProjectForm()">+ Add Project</button></div>
-    ${list.length ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Project</th><th>Client</th><th>Status</th><th class="num">Agreed</th><th class="num">Balance</th><th>Deadline</th></tr></thead><tbody>
+    ${list.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>ID</th><th>Project</th><th>Client</th><th>Status</th><th class="num">Agreed</th><th class="num">Balance</th><th>Deadline</th></tr></thead><tbody>
       ${list.map(p=>{
         const c = S.clients.find(x=>x.id===p.clientId); const bal = Calc.projBalance(p);
-        return `<tr onclick="openProjectDetail('${p.id}')"><td>${esc(p.displayId)}</td><td><strong>${esc(p.name)}</strong></td><td>${esc(c?c.name:'—')}</td><td>${projectStatusBadge(p.status)}</td><td class="num">${fmtMoney(p.agreedPrice)}</td><td class="num" style="color:${bal>0?'var(--warning)':'var(--success)'}">${fmtMoney(bal)}</td><td>${fmtDate(p.deadline)}</td></tr>`;
+        return `<tr onclick="openProjectDetail('${p.id}')"><td><span class="badge gray">${esc(p.displayId)}</span></td><td><strong style="color:#fff;">${esc(p.name)}</strong></td><td>${esc(c?c.name:'—')}</td><td>${projectStatusBadge(p.status)}</td><td class="num">${fmtMoney(p.agreedPrice)}</td><td class="num" style="color:${bal>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(bal)}</td><td>${fmtDate(p.deadline)}</td></tr>`;
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No projects yet</h3><button class="btn btn-primary" onclick="openProjectForm()">+ Add Project</button></div>`}`;
 }
 function renderPayments(){
@@ -847,10 +882,10 @@ function renderPayments(){
   let list = S.payments.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openPaymentForm()">+ Add Payment</button></div>
-    ${list.length ? `<div class="table-wrap"><table><thead><tr><th>Receipt</th><th>Date</th><th>Client</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>Receipt</th><th>Date</th><th>Client</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(p=>{ const c = S.clients.find(x=>x.id===p.clientId);
-        return `<tr><td>${esc(p.displayId)}</td><td>${fmtDate(p.date)}</td><td>${esc(c?c.name:'—')}</td><td class="num" style="color:var(--success)">${fmtMoney(p.amount)}</td><td><span class="badge ${p.status==='Confirmed'?'green':'yellow'}">${esc(p.status)}</span></td>
-        <td><button class="icon-btn" onclick="openPaymentForm('${p.id}')">✏️</button> <button class="icon-btn" onclick="printReceipt('${p.id}')">🖨️</button> <button class="icon-btn" onclick="deletePayment('${p.id}')">🗑️</button></td></tr>`;
+        return `<tr><td>${esc(p.displayId)}</td><td>${fmtDate(p.date)}</td><td>${esc(c?c.name:'—')}</td><td class="num" style="color:var(--success); font-weight:600;">${fmtMoney(p.amount)}</td><td><span class="badge ${p.status==='Confirmed'?'green':'yellow'}">${esc(p.status)}</span></td>
+        <td style="text-align:right;"><button class="icon-btn" onclick="openPaymentForm('${p.id}')">✏️</button> <button class="icon-btn" onclick="printReceipt('${p.id}')">🖨️</button> <button class="icon-btn" onclick="deletePayment('${p.id}')">🗑️</button></td></tr>`;
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No payments recorded</h3><button class="btn btn-primary" onclick="openPaymentForm()">+ Add Payment</button></div>`}`;
 }
 function renderExpenses(){
@@ -858,30 +893,30 @@ function renderExpenses(){
   let list = S.expenses.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openExpenseForm()">+ Add Expense</button></div>
-    ${list.length ? `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th class="num">Amount</th><th></th></tr></thead><tbody>
-      ${list.map(e=>`<tr><td>${fmtDate(e.date)}</td><td>${esc(e.category)}</td><td>${esc(e.description)}</td><td class="num">${fmtMoney(e.amount)}</td><td><button class="icon-btn" onclick="deleteExpense('${e.id}')">🗑️</button></td></tr>`).join('')}</tbody></table></div>` : `<div class="empty"><h3>No expenses recorded</h3><button class="btn btn-primary" onclick="openExpenseForm()">+ Add Expense</button></div>`}`;
+    ${list.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th class="num">Amount</th><th></th></tr></thead><tbody>
+      ${list.map(e=>`<tr><td>${fmtDate(e.date)}</td><td><span class="badge purple">${esc(e.category)}</span></td><td>${esc(e.description)}</td><td class="num" style="color:var(--danger); font-weight:600;">${fmtMoney(e.amount)}</td><td style="text-align:right;"><button class="icon-btn" onclick="deleteExpense('${e.id}')">🗑️</button></td></tr>`).join('')}</tbody></table></div>` : `<div class="empty"><h3>No expenses recorded</h3><button class="btn btn-primary" onclick="openExpenseForm()">+ Add Expense</button></div>`}`;
 }
 function renderFollowups(){
   $('#page-title').textContent = 'Follow-ups';
   let list = S.followups.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openFollowupForm()">+ Add Follow-up</button></div>
-    ${list.length ? `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Client</th><th>Purpose</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>Date</th><th>Client</th><th>Purpose</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(f=>{ const c = S.clients.find(x=>x.id===f.clientId);
-        return `<tr><td>${fmtDate(f.date)}</td><td>${esc(c?c.name:'—')}</td><td>${esc(f.purpose)}</td><td><span class="badge ${f.status==='Completed'?'green':'blue'}">${esc(f.status)}</span></td>
-        <td>${f.status==='Pending'?`<button class="icon-btn" onclick="completeFollowup('${f.id}')">✅</button>`:''} <button class="icon-btn" onclick="deleteFollowup('${f.id}')">🗑️</button></td></tr>`;
+        return `<tr><td>${fmtDate(f.date)}</td><td><strong style="color:#fff;">${esc(c?c.name:'—')}</strong></td><td>${esc(f.purpose)}</td><td><span class="badge ${f.status==='Completed'?'green':f.status==='Rescheduled'?'yellow':'blue'}">${esc(f.status)}</span></td>
+        <td style="text-align:right;">${f.status==='Pending'?`<button class="icon-btn" onclick="completeFollowup('${f.id}')">✅</button>`:''} <button class="icon-btn" onclick="deleteFollowup('${f.id}')">🗑️</button></td></tr>`;
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No follow-ups</h3><button class="btn btn-primary" onclick="openFollowupForm()">+ Add Follow-up</button></div>`}`;
 }
 function renderReports(){
   $('#page-title').textContent = 'Reports';
-  $('#content').innerHTML = `<div class="card"><h3 class="section-title">Export Data</h3><button class="btn btn-ghost" onclick="window.print()">🖨️ Print Statement</button> <button class="btn btn-ghost" onclick="exportJSON()">⬇ Download JSON Backup</button></div>`;
+  $('#content').innerHTML = `<div class="card animate-enter"><h3 class="section-title" style="margin-top:0;">Export Data</h3><p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Download your data for backup or print statements.</p><button class="btn btn-ghost" onclick="window.print()">🖨️ Print Statement</button> <button class="btn btn-primary" onclick="exportJSON()">⬇ Download JSON Backup</button></div>`;
 }
 function renderSettings(){
   $('#page-title').textContent = 'Settings';
   $('#content').innerHTML = `
-    <div class="grid cols-2">
-      <div class="card"><div class="stat-label">Backup & Restore</div><p class="stat-sub mt-1">Download complete JSON backup.</p><button class="btn btn-primary mt-2" onclick="exportJSON()">⬇ Download JSON</button> <button class="btn btn-ghost mt-2" onclick="document.getElementById('import-file').click()">⬆ Restore</button><input type="file" id="import-file" style="display:none" onchange="importJSON(event)"></div>
-      <div class="card"><div class="stat-label">Danger Zone</div><p class="stat-sub mt-1">Delete all data.</p><button class="btn btn-danger mt-2" onclick="wipeAll()">🗑 Delete All Data</button></div>
+    <div class="grid cols-2 animate-enter">
+      <div class="card"><div class="stat-label">Backup & Restore</div><p class="stat-sub mt-2" style="margin-bottom:16px;">Download complete JSON backup of your data.</p><button class="btn btn-primary" onclick="exportJSON()">⬇ Download JSON</button> <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">⬆ Restore</button><input type="file" id="import-file" style="display:none" onchange="importJSON(event)"></div>
+      <div class="card" style="border-color:rgba(239,68,68,0.3);"><div class="stat-label" style="color:var(--danger);">Danger Zone</div><p class="stat-sub mt-2" style="margin-bottom:16px;">Permanently delete all data. This cannot be undone.</p><button class="btn btn-danger" onclick="wipeAll()">🗑 Delete All Data</button></div>
     </div>`;
 }
 
@@ -891,18 +926,26 @@ function renderSettings(){
 function openClientForm(id){
   const c = id ? S.clients.find(x=>x.id===id) : {};
   if(id && !c) return;
+  
+  // Naye Categories Add Kiye Gaye Hain
   const CATEGORIES = [
     'Mobile Shop','Coaching Institute','School','Gym','Cosmetic / Beauty',
     'Restaurant','Bakery Shop','Cafe','Grocery / Kirana','Boutique / Fashion',
     'Salon','Hotel','Clinic / Doctor','Photography','Real Estate',
     'Automobile','Electronics','Local Business','Personal Portfolio','Other'
   ];
+  
   const { close } = openModal(id?'Edit Client':'Add Client', `
     <form id="form-client" class="form-grid">
-      <label class="full">Business / Client Name *
+      
+      <!-- OWNER NAME PEHLE -->
+      <label>Owner / Contact Person *
+        <input name="owner" required value="${esc(c.owner||'')}" placeholder="e.g. Rajesh Sharma"></label>
+      
+      <!-- BUSINESS NAME BAAD ME -->
+      <label>Business / Client Name *
         <input name="name" required value="${esc(c.name||'')}" placeholder="e.g. Sharma Mobile Shop"></label>
-      <label>Owner / Contact Person
-        <input name="owner" value="${esc(c.owner||'')}" placeholder="e.g. Rajesh Sharma"></label>
+      
       <label>Category
         <select name="category">
           <option value="">Select…</option>
@@ -945,16 +988,16 @@ function openClientForm(id){
   document.getElementById('form-client').onsubmit = async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
-    btn.disabled = true; btn.textContent = 'Saving...';
+    btn.disabled = true; btn.innerHTML = 'Saving...';
 
     const fd = new FormData(e.target); const data = Object.fromEntries(fd.entries());
-    if(!data.name.trim() || !data.mobile.trim()) {
-       alert('Name and Mobile are required!');
+    if(!data.name.trim() || !data.mobile.trim() || !data.owner.trim()) {
+       alert('Name, Owner, and Mobile are required!');
        btn.disabled = false; btn.textContent = 'Save'; return;
     }
     
     let rec = { ...c, id: c.id || uid(), displayId: c.displayId || await nextDisplayId('clients','CL'), createdAt: c.createdAt || new Date().toISOString(), ...data };
-    rec = sanitizeRecord(rec, ['firstContactDate']); // Fix empty date strings
+    rec = sanitizeRecord(rec, ['firstContactDate']); 
 
     try { 
       await dbPut('clients', rec); 
@@ -962,7 +1005,7 @@ function openClientForm(id){
     } catch(err){ 
       alert('Error Saving: ' + err.message); 
     } finally { 
-      btn.disabled = false; btn.textContent = 'Save'; 
+      btn.disabled = false; btn.textContent = id?'Save Changes':'Create Client'; 
     }
   };
 }
@@ -1043,7 +1086,7 @@ function openProjectForm(id, clientId){
     } catch(err){ 
       alert('Error Saving: ' + err.message); 
     } finally { 
-      btn.disabled = false; btn.textContent = 'Save'; 
+      btn.disabled = false; btn.textContent = id?'Save Changes':'Create Project'; 
     }
   };
 }
@@ -1135,7 +1178,7 @@ function openPaymentForm(id, presetClientId, presetProjectId){
     } catch(err){ 
       alert('Error Saving: ' + err.message); 
     } finally { 
-      btn.disabled = false; btn.textContent = 'Save'; 
+      btn.disabled = false; btn.textContent = id?'Save Changes':'Record Payment'; 
     }
   };
 }
@@ -1202,7 +1245,7 @@ function openExpenseForm(id){
     } catch(err){ 
       alert('Error Saving: ' + err.message); 
     } finally { 
-      btn.disabled = false; btn.textContent = 'Save'; 
+      btn.disabled = false; btn.textContent = id?'Save Changes':'Add Expense'; 
     }
   };
 }
@@ -1257,19 +1300,19 @@ function openFollowupForm(id, clientId){
     } catch(err){ 
       alert('Error Saving: ' + err.message); 
     } finally { 
-      btn.disabled = false; btn.textContent = 'Save'; 
+      btn.disabled = false; btn.textContent = id?'Save Changes':'Add Follow-up'; 
     }
   };
 }
 
 /* ---------- Helpers: Delete, Backup, Export ---------- */
-async function deleteClient(id){ if(!(await confirmAction('Delete client and all data?'))) return; for(const p of S.projects.filter(x=>x.clientId===id)) await dbDel('projects',p.id); for(const p of S.payments.filter(x=>x.clientId===id)) await dbDel('payments',p.id); await dbDel('clients',id); await loadAll(); location.hash='#/clients'; }
-async function deleteProject(id){ if(!(await confirmAction('Delete project?'))) return; for(const p of S.payments.filter(x=>x.projectId===id)) await dbDel('payments',p.id); await dbDel('projects',id); await loadAll(); route(); }
-async function deletePayment(id){ if(!(await confirmAction('Delete payment?'))) return; await dbDel('payments',id); await loadAll(); route(); }
-async function deleteExpense(id){ if(!(await confirmAction('Delete expense?'))) return; await dbDel('expenses',id); await loadAll(); route(); }
-async function deleteFollowup(id){ if(!(await confirmAction('Delete follow-up?'))) return; await dbDel('followups',id); await loadAll(); route(); }
-async function toggleArchiveClient(id){ const c=S.clients.find(x=>x.id===id); c.archived=!c.archived; await dbPut('clients',c); await loadAll(); route(); }
-async function completeFollowup(id){ const f=S.followups.find(x=>x.id===id); f.status='Completed'; await dbPut('followups',f); await loadAll(); route(); }
+async function deleteClient(id){ if(!(await confirmAction('Delete client and all related data?'))) return; for(const p of S.projects.filter(x=>x.clientId===id)) await dbDel('projects',p.id); for(const p of S.payments.filter(x=>x.clientId===id)) await dbDel('payments',p.id); await dbDel('clients',id); await loadAll(); location.hash='#/clients'; toast('Client deleted'); }
+async function deleteProject(id){ if(!(await confirmAction('Delete project and related payments?'))) return; for(const p of S.payments.filter(x=>x.projectId===id)) await dbDel('payments',p.id); await dbDel('projects',id); await loadAll(); route(); toast('Project deleted'); }
+async function deletePayment(id){ if(!(await confirmAction('Delete this payment record?'))) return; await dbDel('payments',id); await loadAll(); route(); toast('Payment deleted'); }
+async function deleteExpense(id){ if(!(await confirmAction('Delete this expense?'))) return; await dbDel('expenses',id); await loadAll(); route(); toast('Expense deleted'); }
+async function deleteFollowup(id){ if(!(await confirmAction('Delete this follow-up?'))) return; await dbDel('followups',id); await loadAll(); route(); toast('Follow-up deleted'); }
+async function toggleArchiveClient(id){ const c=S.clients.find(x=>x.id===id); c.archived=!c.archived; await dbPut('clients',c); await loadAll(); route(); toast(c.archived?'Client Archived':'Client Unarchived'); }
+async function completeFollowup(id){ const f=S.followups.find(x=>x.id===id); f.status='Completed'; await dbPut('followups',f); await loadAll(); route(); toast('Follow-up Completed'); }
 
 function openProjectDetail(id){ 
   const p = S.projects.find(x=>x.id===id); if(!p) return; 
@@ -1277,34 +1320,34 @@ function openProjectDetail(id){
   const payments = S.payments.filter(x=>x.projectId===p.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 
   openModal('Project: '+p.name, `
-    <div class="grid cols-2" style="margin-bottom:14px">
+    <div class="grid cols-2" style="margin-bottom:16px">
       ${statCard('Agreed', fmtMoney(p.agreedPrice))}
       ${statCard('Received', fmtMoney(rec), '', 'pos')}
       ${statCard('Balance', fmtMoney(bal), '', bal>0?'warn':'pos')}
       ${statCard('Expenses', fmtMoney(exp))}
     </div>
-    <div class="card">
+    <div class="card" style="background:rgba(0,0,0,0.2);">
       <div class="stat-sub">Status</div>
-      <div class="mt-1">${projectStatusBadge(p.status)} ${payStatusBadge(st)}</div>
+      <div class="mt-1" style="font-size:15px;">${projectStatusBadge(p.status)} ${payStatusBadge(st)}</div>
       <div class="stat-sub mt-2">Type: ${esc(p.type||'—')}</div>
       <div class="stat-sub">Deadline: ${fmtDate(p.deadline)} · Delivery: ${fmtDate(p.deliveryDate)}</div>
-      ${p.description?`<div class="mt-2"><div class="stat-label">Description</div><p style="margin:4px 0;font-size:13px">${esc(p.description)}</p></div>`:''}
-      ${p.liveUrl?`<div class="stat-sub mt-1">Live: <a href="${esc(p.liveUrl)}" target="_blank" rel="noopener">${esc(p.liveUrl)}</a></div>`:''}
+      ${p.description?`<div class="mt-2"><div class="stat-label">Description</div><p style="margin:6px 0;font-size:13px;color:#ccc;">${esc(p.description)}</p></div>`:''}
+      ${p.liveUrl?`<div class="stat-sub mt-2">Live: <a href="${esc(p.liveUrl)}" target="_blank" rel="noopener">${esc(p.liveUrl)}</a></div>`:''}
       ${p.repoUrl?`<div class="stat-sub">Repo: <a href="${esc(p.repoUrl)}" target="_blank" rel="noopener">${esc(p.repoUrl)}</a></div>`:''}
-      <div class="stat-sub mt-2">Net earnings: <strong style="color:${net>=0?'var(--success)':'var(--danger)'}">${fmtMoney(net)}</strong></div>
+      <div class="stat-sub mt-2">Net earnings: <strong style="color:${net>=0?'var(--success)':'var(--danger)'}; font-size:14px;">${fmtMoney(net)}</strong></div>
     </div>
-    <h3 class="section-title">Payments (${payments.length})</h3>
-    <div style="max-height:240px;overflow-y:auto">
+    <h3 class="section-title" style="margin-top:20px;">Payments (${payments.length})</h3>
+    <div style="max-height:240px;overflow-y:auto; padding-right:4px;">
       ${payments.length?payments.map(x=>`
-        <div class="flex between center" style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
-          <div><strong>${fmtDate(x.date)}</strong> · ${esc(x.displayId)} · ${esc(x.method||'')}</div>
+        <div class="flex between center" style="padding:10px 0;border-bottom:1px solid var(--border);font-size:13px">
+          <div><strong>${fmtDate(x.date)}</strong> · <span class="badge gray">${esc(x.displayId)}</span> · ${esc(x.method||'')}</div>
           <div class="flex gap center">
-            <span>${x.type==='Refund'?'-':''}${fmtMoney(x.amount)}</span>
+            <span style="font-weight:600; color:var(--success)">${x.type==='Refund'?'-':''}${fmtMoney(x.amount)}</span>
             <span class="badge ${x.status==='Confirmed'?'green':'yellow'}">${esc(x.status)}</span>
           </div>
-        </div>`).join(''):`<div class="empty" style="padding:20px"><p>No payments yet.</p></div>`}
+        </div>`).join(''):`<div class="empty" style="padding:30px"><p>No payments yet.</p></div>`}
     </div>
-    <div class="form-actions">
+    <div class="form-actions" style="border:none; padding-top:10px;">
       <button class="btn btn-ghost" onclick="openPaymentForm(null,null,'${p.id}')">+ Payment</button>
       <button class="btn btn-primary" onclick="openProjectForm('${p.id}')">Edit</button>
       <button class="btn btn-danger" onclick="deleteProject('${p.id}')">Delete</button>
@@ -1315,9 +1358,9 @@ function openProjectDetail(id){
 function printReceipt(id){ window.print(); }
 function printClientStatement(){ window.print(); }
 
-function exportJSON(){ const data={clients:S.clients,projects:S.projects,payments:S.payments,expenses:S.expenses,followups:S.followups}; const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'})); a.download='backup.json'; a.click(); }
-async function importJSON(ev){ const file=ev.target.files[0]; if(!file) return; const data=JSON.parse(await file.text()); for(const store of ['clients','projects','payments','expenses','followups']) for(const rec of (data[store]||[])) await dbPut(store,rec); await loadAll(); toast('Restored'); route(); }
-async function wipeAll(){ if(!(await confirmAction('Wipe all data?'))) return; for(const s of ['clients','projects','payments','expenses','followups']) await dbClear(s); await loadAll(); route(); }
+function exportJSON(){ const data={clients:S.clients,projects:S.projects,payments:S.payments,expenses:S.expenses,followups:S.followups}; const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'})); a.download='asviro_backup.json'; a.click(); toast('Backup Downloaded'); }
+async function importJSON(ev){ const file=ev.target.files[0]; if(!file) return; const data=JSON.parse(await file.text()); for(const store of ['clients','projects','payments','expenses','followups']) for(const rec of (data[store]||[])) await dbPut(store,rec); await loadAll(); toast('Data Restored'); route(); }
+async function wipeAll(){ if(!(await confirmAction('WARNING: This will permanently delete ALL your data from the cloud. Are you absolutely sure?'))) return; for(const s of ['clients','projects','payments','expenses','followups']) await dbClear(s); await loadAll(); route(); toast('All data wiped','error'); }
 
 /* ============================================================
    INIT
