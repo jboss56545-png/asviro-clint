@@ -958,13 +958,13 @@ function openClientForm(id){
   const { close } = openModal(id?'Edit Client':'Add Client', `
     <form id="form-client" class="form-grid">
       
-      <!-- Owner Name -->
-      <label>Owner Name *
-        <input name="owner" required value="${esc(c.owner||'')}" placeholder="e.g. Rajesh Sharma"></label>
-      
-      <!-- Business Name -->
+      <!-- Business Name (First) -->
       <label>Business Name *
         <input name="name" required value="${esc(c.name||'')}" placeholder="e.g. Sharma Mobile Shop"></label>
+
+      <!-- Owner Name (Second) -->
+      <label>Owner Name *
+        <input name="owner" required value="${esc(c.owner||'')}" placeholder="e.g. Rajesh Sharma"></label>
       
       <label>Category
         <select name="category">
@@ -1019,7 +1019,7 @@ function openClientForm(id){
 
     const fd = new FormData(e.target); const data = Object.fromEntries(fd.entries());
     if(!data.name.trim() || !data.mobile.trim() || !data.owner.trim()) {
-       alert('Owner Name, Business Name, and Mobile are required!');
+       alert('Business Name, Owner Name, and Mobile are required!');
        btn.disabled = false; btn.textContent = 'Save'; return;
     }
     
