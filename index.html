@@ -261,9 +261,9 @@ tbody tr:hover{background:rgba(34, 48, 79, 0.5); transform:scale(1.005); box-sha
   <div class="main">
     <div class="topbar">
       <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
-      <!-- Yahan top title fix kar diya hai -->
-      <h1 id="page-title">Asviro Client Hub</h1>
-      <div class="search"><input id="global-search" placeholder="Search clients or projects…" autocomplete="off"></div>
+      <!-- Title dynamic rahega -->
+      <h1 id="page-title"></h1>
+      <div class="search"><input id="global-search" placeholder="Search clients or projects... (Press Enter)" autocomplete="off"></div>
       <button class="btn btn-primary" id="quick-add">+ New</button>
     </div>
     <div class="content" id="content"></div>
@@ -516,7 +516,8 @@ const routes = {
 
 function route(){
   const hash = location.hash.slice(1) || '/dashboard';
-  const parts = hash.split('/').filter(Boolean);
+  const [path, query] = hash.split('?');
+  const parts = path.split('/').filter(Boolean);
   const name = parts[0] || 'dashboard';
   const fn = routes[name] || renderDashboard;
   destroyCharts();
@@ -551,15 +552,13 @@ $('#hamburger').onclick = () => { $('#sidebar').classList.toggle('open'); $('#ov
 $('#overlay').onclick = () => { $('#sidebar').classList.remove('open'); $('#overlay').classList.remove('show'); };
 $('#quick-add').onclick = () => quickAddMenu();
 
-// Auto Search Global
-$('#global-search').addEventListener('input', debounce(e => {
-  const q = e.target.value.trim();
-  if(q.length >= 2) {
-    location.hash = `#/clients?q=${encodeURIComponent(q)}`;
-  } else if(q.length === 0 && location.hash.includes('?q=')) {
-    location.hash = '#/clients';
+// Top Bar Global Search (Enter dabane par search hoga, no glitch)
+$('#global-search').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){
+    const q = e.target.value.trim();
+    location.hash = `#/clients${q ? '?q=' + encodeURIComponent(q) : ''}`;
   }
-}, 500));
+});
 
 function quickAddMenu(){
   const { close } = openModal('Add New', `
@@ -590,6 +589,8 @@ function quickAddMenu(){
    DASHBOARD
    ============================================================ */
 function renderDashboard(){
+  $('#page-title').textContent = 'Asviro Client Hub'; // Dashboard par brand name
+  
   const totalClients = S.clients.filter(c=>!c.archived).length;
   const active = Calc.activeProjects().length;
   const completed = Calc.completedProjects().length;
@@ -693,99 +694,109 @@ function statCard(label, value, sub, cls=''){
    CLIENTS
    ============================================================ */
 function renderClients(parts){
+  $('#page-title').textContent = 'Clients'; // Topbar title
+
   const params = new URLSearchParams((location.hash.split('?')[1])||'');
-  let q = params.get('q') || '';
-  let category = params.get('cat') || '';
-  let status = params.get('status') || '';
-  let sort = params.get('sort') || 'newest';
-  let showArchived = params.get('arch') === '1';
-
-  let list = S.clients.filter(c => showArchived ? c.archived : !c.archived);
-  
-  // SEARCH LOGIC LINKAGE: Client Name, Owner, Mobile, or Project Name
-  if(q){
-    const ql = q.toLowerCase();
-    list = list.filter(c => 
-       (c.name||'').toLowerCase().includes(ql) || 
-       (c.owner||'').toLowerCase().includes(ql) || 
-       (c.mobile||'').includes(ql) || 
-       (c.displayId||'').toLowerCase().includes(ql) || 
-       S.projects.some(p=>p.clientId===c.id && (p.name||'').toLowerCase().includes(ql))
-    );
-  }
-
-  if(category) list = list.filter(c=>c.category===category);
-  if(status) list = list.filter(c=>c.status===status);
-  
-  list.sort((a,b)=>{
-    if(sort==='newest') return (b.createdAt||'').localeCompare(a.createdAt||'');
-    if(sort==='oldest') return (a.createdAt||'').localeCompare(b.createdAt||'');
-    if(sort==='outstanding') return Calc.clientOutstanding(b.id)-Calc.clientOutstanding(a.id);
-    if(sort==='deadline'){
-      const da = Math.min(...Calc.clientProjects(a.id).map(p=>p.deadline?new Date(p.deadline).getTime():Infinity));
-      const db = Math.min(...Calc.clientProjects(b.id).map(p=>p.deadline?new Date(p.deadline).getTime():Infinity));
-      return da-db;
-    }
-    if(sort==='payment'){
-      const pa = Math.max(0,...S.payments.filter(p=>p.clientId===a.id).map(p=>new Date(p.date||0).getTime()));
-      const pb = Math.max(0,...S.payments.filter(p=>p.clientId===b.id).map(p=>new Date(p.date||0).getTime()));
-      return pb-pa;
-    }
-    return 0;
-  });
+  let initialQ = params.get('q') || '';
+  let initialCategory = params.get('cat') || '';
+  let initialStatus = params.get('status') || '';
+  let initialSort = params.get('sort') || 'newest';
+  let initialArch = params.get('arch') === '1';
 
   const categories = [...new Set(S.clients.map(c=>c.category).filter(Boolean))];
   const statuses = ['Lead','Contacted','Interested','Confirmed','Active','Completed','Cancelled'];
 
   $('#content').innerHTML = `
     <div class="filters">
-      <input id="f-q" placeholder="Search clients or projects…" value="${esc(q)}">
-      <select id="f-cat"><option value="">All categories</option>${categories.map(c=>`<option ${category===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
-      <select id="f-status"><option value="">All statuses</option>${statuses.map(s=>`<option ${status===s?'selected':''}>${esc(s)}</option>`).join('')}</select>
+      <input id="f-q" placeholder="Search clients or projects…" value="${esc(initialQ)}">
+      <select id="f-cat"><option value="">All categories</option>${categories.map(c=>`<option ${initialCategory===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
+      <select id="f-status"><option value="">All statuses</option>${statuses.map(s=>`<option ${initialStatus===s?'selected':''}>${esc(s)}</option>`).join('')}</select>
       <select id="f-sort">
-        <option value="newest" ${sort==='newest'?'selected':''}>Newest first</option>
-        <option value="oldest" ${sort==='oldest'?'selected':''}>Oldest first</option>
-        <option value="outstanding" ${sort==='outstanding'?'selected':''}>Highest outstanding</option>
-        <option value="deadline" ${sort==='deadline'?'selected':''}>Nearest deadline</option>
-        <option value="payment" ${sort==='payment'?'selected':''}>Latest payment</option>
+        <option value="newest" ${initialSort==='newest'?'selected':''}>Newest first</option>
+        <option value="oldest" ${initialSort==='oldest'?'selected':''}>Oldest first</option>
+        <option value="outstanding" ${initialSort==='outstanding'?'selected':''}>Highest outstanding</option>
+        <option value="deadline" ${initialSort==='deadline'?'selected':''}>Nearest deadline</option>
+        <option value="payment" ${initialSort==='payment'?'selected':''}>Latest payment</option>
       </select>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;background:var(--surface);padding:8px 14px;border-radius:99px;border:1px solid var(--border);"><input type="checkbox" id="f-arch" ${showArchived?'checked':''} style="width:auto;accent-color:var(--accent);"> Show archived</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;background:var(--surface);padding:8px 14px;border-radius:99px;border:1px solid var(--border);"><input type="checkbox" id="f-arch" ${initialArch?'checked':''} style="width:auto;accent-color:var(--accent);"> Show archived</label>
       <button class="btn btn-primary" style="margin-left:auto;" onclick="openClientForm()">+ Add Client</button>
     </div>
-    ${list.length ? `
-      <div class="table-wrap animate-enter"><table><thead><tr><th>ID</th><th>Client</th><th>Contact</th><th>Projects</th><th class="num">Outstanding</th><th>Status</th></tr></thead>
-        <tbody>${list.map(c=>{
-              const out = Calc.clientOutstanding(c.id); const pc = Calc.clientProjects(c.id).length;
-              return `<tr onclick="location.hash='#/client/${c.id}'">
-                <td><span class="badge gray">${esc(c.displayId)}</span></td>
-                <td><strong style="font-size:14px;color:#fff;">${esc(c.name)}</strong>${c.owner?`<div class="stat-sub">${esc(c.owner)}</div>`:''}</td>
-                <td>${esc(c.mobile||'—')}<div class="stat-sub">${esc(c.city||'')}</div></td>
-                <td><span class="badge blue">${pc}</span></td>
-                <td class="num ${out>0?'':'pos'}" style="color:${out>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(out)}</td>
-                <td>${clientStatusBadge(c.status)}</td></tr>`;
-            }).join('')}</tbody></table></div>` :
-      `<div class="empty"><div class="icon">👥</div><h3>No clients found</h3><p>Try adjusting your search or add a new client.</p><button class="btn btn-primary" onclick="openClientForm()">+ Add Client</button></div>`}
+    <div id="clients-table-container"></div>
   `;
 
-  const updateUrl = () => {
-    const p = new URLSearchParams();
-    const qv = $('#f-q').value.trim(); if(qv) p.set('q',qv);
-    if($('#f-cat').value) p.set('cat',$('#f-cat').value);
-    if($('#f-status').value) p.set('status',$('#f-status').value);
-    if($('#f-sort').value!=='newest') p.set('sort',$('#f-sort').value);
-    if($('#f-arch').checked) p.set('arch','1');
-    location.hash = '#/clients'+(p.toString()?'?'+p.toString():'');
-  };
-  
-  // Update global search if it exists
-  if($('#global-search') && q) { $('#global-search').value = q; }
+  const renderList = () => {
+    const q = $('#f-q').value.trim();
+    const category = $('#f-cat').value;
+    const status = $('#f-status').value;
+    const sort = $('#f-sort').value;
+    const showArchived = $('#f-arch').checked;
 
-  $('#f-q').addEventListener('input', debounce(updateUrl, 400));
-  $('#f-cat').addEventListener('change', updateUrl);
-  $('#f-status').addEventListener('change', updateUrl);
-  $('#f-sort').addEventListener('change', updateUrl);
-  $('#f-arch').addEventListener('change', updateUrl);
+    let list = S.clients.filter(c => showArchived ? c.archived : !c.archived);
+    
+    // SEARCH LOGIC: Client Name, Owner, Mobile, or Project Name
+    if(q){
+      const ql = q.toLowerCase();
+      list = list.filter(c => 
+         (c.name||'').toLowerCase().includes(ql) || 
+         (c.owner||'').toLowerCase().includes(ql) || 
+         (c.mobile||'').includes(ql) || 
+         (c.displayId||'').toLowerCase().includes(ql) || 
+         S.projects.some(p=>p.clientId===c.id && (p.name||'').toLowerCase().includes(ql))
+      );
+    }
+
+    if(category) list = list.filter(c=>c.category===category);
+    if(status) list = list.filter(c=>c.status===status);
+    
+    list.sort((a,b)=>{
+      if(sort==='newest') return (b.createdAt||'').localeCompare(a.createdAt||'');
+      if(sort==='oldest') return (a.createdAt||'').localeCompare(b.createdAt||'');
+      if(sort==='outstanding') return Calc.clientOutstanding(b.id)-Calc.clientOutstanding(a.id);
+      if(sort==='deadline'){
+        const da = Math.min(...Calc.clientProjects(a.id).map(p=>p.deadline?new Date(p.deadline).getTime():Infinity));
+        const db = Math.min(...Calc.clientProjects(b.id).map(p=>p.deadline?new Date(p.deadline).getTime():Infinity));
+        return da-db;
+      }
+      if(sort==='payment'){
+        const pa = Math.max(0,...S.payments.filter(p=>p.clientId===a.id).map(p=>new Date(p.date||0).getTime()));
+        const pb = Math.max(0,...S.payments.filter(p=>p.clientId===b.id).map(p=>new Date(p.date||0).getTime()));
+        return pb-pa;
+      }
+      return 0;
+    });
+
+    const container = $('#clients-table-container');
+    if(list.length) {
+      container.innerHTML = `
+        <div class="table-wrap animate-enter"><table><thead><tr><th>ID</th><th>Client</th><th>Contact</th><th>Projects</th><th class="num">Outstanding</th><th>Status</th></tr></thead>
+          <tbody>${list.map(c=>{
+                const out = Calc.clientOutstanding(c.id); const pc = Calc.clientProjects(c.id).length;
+                return `<tr onclick="location.hash='#/client/${c.id}'">
+                  <td><span class="badge gray">${esc(c.displayId)}</span></td>
+                  <td><strong style="font-size:14px;color:#fff;">${esc(c.name)}</strong>${c.owner?`<div class="stat-sub">${esc(c.owner)}</div>`:''}</td>
+                  <td>${esc(c.mobile||'—')}<div class="stat-sub">${esc(c.city||'')}</div></td>
+                  <td><span class="badge blue">${pc}</span></td>
+                  <td class="num ${out>0?'':'pos'}" style="color:${out>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(out)}</td>
+                  <td>${clientStatusBadge(c.status)}</td></tr>`;
+              }).join('')}</tbody></table></div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="empty"><div class="icon">👥</div><h3>No clients found</h3><p>Try adjusting your search or add a new client.</p><button class="btn btn-primary" onclick="openClientForm()">+ Add Client</button></div>
+      `;
+    }
+  };
+
+  // Smooth filtering without page reload
+  $('#f-q').addEventListener('input', debounce(renderList, 300));
+  $('#f-cat').addEventListener('change', renderList);
+  $('#f-status').addEventListener('change', renderList);
+  $('#f-sort').addEventListener('change', renderList);
+  $('#f-arch').addEventListener('change', renderList);
+
+  renderList();
 }
+
 function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
 function clientStatusBadge(s){ const map = {Lead:'gray',Contacted:'blue',Interested:'cyan',Confirmed:'purple',Active:'green',Completed:'green',Cancelled:'red'}; return `<span class="badge ${map[s]||'gray'}">${esc(s||'—')}</span>`; }
 function projectStatusBadge(s){ const map = {'Not Started':'gray','In Progress':'blue','Waiting for Client':'yellow','Revision':'purple','Completed':'green','Delivered':'green','Cancelled':'red'}; return `<span class="badge ${map[s]||'gray'}">${esc(s||'—')}</span>`; }
@@ -798,6 +809,8 @@ function renderClientProfile(parts){
   const id = parts[0];
   const c = S.clients.find(x=>x.id===id);
   if(!c){ $('#content').innerHTML = `<div class="empty"><h3>Client not found</h3><button class="btn btn-primary" onclick="location.hash='#/clients'">Back</button></div>`; return; }
+  
+  $('#page-title').textContent = c.name; // Topbar title
 
   const projects = Calc.clientProjects(c.id);
   const payments = S.payments.filter(p=>p.clientId===c.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
@@ -873,6 +886,7 @@ function parseLinks(text){
    PROJECTS & PAYMENTS & EXPENSES & FOLLOWUPS
    ============================================================ */
 function renderProjects(){
+  $('#page-title').textContent = 'Projects'; // Topbar title
   let list = S.projects.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openProjectForm()">+ Add Project</button></div>
@@ -883,6 +897,7 @@ function renderProjects(){
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No projects yet</h3><button class="btn btn-primary" onclick="openProjectForm()">+ Add Project</button></div>`}`;
 }
 function renderPayments(){
+  $('#page-title').textContent = 'Payments'; // Topbar title
   let list = S.payments.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openPaymentForm()">+ Add Payment</button></div>
@@ -893,6 +908,7 @@ function renderPayments(){
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No payments recorded</h3><button class="btn btn-primary" onclick="openPaymentForm()">+ Add Payment</button></div>`}`;
 }
 function renderExpenses(){
+  $('#page-title').textContent = 'Expenses'; // Topbar title
   let list = S.expenses.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openExpenseForm()">+ Add Expense</button></div>
@@ -900,6 +916,7 @@ function renderExpenses(){
       ${list.map(e=>`<tr><td>${fmtDate(e.date)}</td><td><span class="badge purple">${esc(e.category)}</span></td><td>${esc(e.description)}</td><td class="num" style="color:var(--danger); font-weight:600;">${fmtMoney(e.amount)}</td><td style="text-align:right;"><button class="icon-btn" onclick="deleteExpense('${e.id}')">🗑️</button></td></tr>`).join('')}</tbody></table></div>` : `<div class="empty"><h3>No expenses recorded</h3><button class="btn btn-primary" onclick="openExpenseForm()">+ Add Expense</button></div>`}`;
 }
 function renderFollowups(){
+  $('#page-title').textContent = 'Follow-ups'; // Topbar title
   let list = S.followups.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openFollowupForm()">+ Add Follow-up</button></div>
@@ -910,9 +927,11 @@ function renderFollowups(){
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No follow-ups</h3><button class="btn btn-primary" onclick="openFollowupForm()">+ Add Follow-up</button></div>`}`;
 }
 function renderReports(){
+  $('#page-title').textContent = 'Reports'; // Topbar title
   $('#content').innerHTML = `<div class="card animate-enter"><h3 class="section-title" style="margin-top:0;">Export Data</h3><p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Download your data for backup or print statements.</p><button class="btn btn-ghost" onclick="window.print()">🖨️ Print Statement</button> <button class="btn btn-primary" onclick="exportJSON()">⬇ Download JSON Backup</button></div>`;
 }
 function renderSettings(){
+  $('#page-title').textContent = 'Settings'; // Topbar title
   $('#content').innerHTML = `
     <div class="grid cols-2 animate-enter">
       <div class="card"><div class="stat-label">Backup & Restore</div><p class="stat-sub mt-2" style="margin-bottom:16px;">Download complete JSON backup of your data.</p><button class="btn btn-primary" onclick="exportJSON()">⬇ Download JSON</button> <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">⬆ Restore</button><input type="file" id="import-file" style="display:none" onchange="importJSON(event)"></div>
@@ -934,7 +953,6 @@ function openClientForm(id){
     'Automobile','Electronics','Local Business','Personal Portfolio','Other'
   ];
   
-  // Handling +91 Prefix for WhatsApp
   const waVal = (c.whatsapp || '').replace(/^\+?91/, '').replace(/\D/g, '');
 
   const { close } = openModal(id?'Edit Client':'Add Client', `
@@ -1005,12 +1023,11 @@ function openClientForm(id){
        btn.disabled = false; btn.textContent = 'Save'; return;
     }
     
-    // Process WhatsApp Number to have '91' prefix for DB
     if(data.whatsapp) {
       let cleanWa = data.whatsapp.replace(/\D/g, '');
       if(cleanWa.length === 10) data.whatsapp = '91' + cleanWa;
       else if(cleanWa.length === 12 && cleanWa.startsWith('91')) data.whatsapp = cleanWa;
-      else if(cleanWa.length > 0) data.whatsapp = cleanWa; // fallback
+      else if(cleanWa.length > 0) data.whatsapp = cleanWa; 
     }
     
     let rec = { ...c, id: c.id || uid(), displayId: c.displayId || await nextDisplayId('clients','CL'), createdAt: c.createdAt || new Date().toISOString(), ...data };
