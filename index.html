@@ -83,7 +83,6 @@ input:invalid,select:invalid{border-color:var(--danger)}
 /* Animations */
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 @keyframes slideUp { from{opacity:0; transform:translateY(20px)} to{opacity:1; transform:translateY(0)} }
-@keyframes pulseGlow { 0%{box-shadow:0 0 0 0 rgba(59,130,246,0.4)} 70%{box-shadow:0 0 0 10px rgba(59,130,246,0)} 100%{box-shadow:0 0 0 0 rgba(59,130,246,0)} }
 .animate-enter { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 /* Cards & Grids */
@@ -168,6 +167,12 @@ tbody tr:hover{background:rgba(34, 48, 79, 0.5); transform:scale(1.005); box-sha
 .form-error{color:var(--danger);font-size:12px;margin-top:8px;display:none}
 .form-error.show{display:block}
 
+/* Custom Input Group for +91 */
+.input-group { display:flex; align-items:center; background:rgba(10,14,26,0.6); border:1px solid var(--border); border-radius:10px; overflow:hidden; transition:all .2s; }
+.input-group:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px rgba(34,211,238,0.15); background:rgba(10,14,26,0.9); }
+.input-group .prefix { padding:0 14px; color:var(--muted); border-right:1px solid var(--border); font-weight:600; font-size:14px; background:rgba(0,0,0,0.2); }
+.input-group input { border:none !important; border-radius:0 !important; background:transparent !important; box-shadow:none !important; padding-left:14px; }
+
 /* Modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:200;display:flex;
   align-items:flex-end;justify-content:center;padding:0;overflow-y:auto;animation:fadeIn .2s}
@@ -217,9 +222,7 @@ tbody tr:hover{background:rgba(34, 48, 79, 0.5); transform:scale(1.005); box-sha
 .flex{display:flex}.gap{gap:10px}.between{justify-content:space-between}.center{align-items:center}
 .mt-1{margin-top:6px}.mt-2{margin-top:16px}
 
-/* ============================================================
-   RESPONSIVE FIXES
-   ============================================================ */
+/* RESPONSIVE */
 @media(max-width:900px){
   .sidebar{transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0); box-shadow:10px 0 50px rgba(0,0,0,0.8);}
@@ -228,19 +231,14 @@ tbody tr:hover{background:rgba(34, 48, 79, 0.5); transform:scale(1.005); box-sha
   .grid.cols-4, .grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
   .grid.cols-2 { grid-template-columns: 1fr; } 
   .content{padding:16px}
-  .topbar h1{font-size:18px}
+  .topbar h1{font-size:16px}
 }
-
 @media(max-width:520px){
   .grid.cols-4 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .grid.cols-2, .grid.cols-3 { grid-template-columns: 1fr; gap: 14px; }
   .form-grid { grid-template-columns: 1fr; }
   .topbar .search { display: none; }
-  .grid.cols-4 .card { 
-    padding: 14px 10px; 
-    min-height: 85px; 
-    display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; 
-  }
+  .grid.cols-4 .card { padding: 14px 10px; min-height: 85px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
   .grid.cols-4 .stat-value { font-size: 18px; margin-top: 4px; }
   .grid.cols-4 .stat-label { font-size: 10px; line-height: 1.2; letter-spacing: 0; }
   .grid.cols-4 .stat-sub { font-size: 10px; margin-top: 4px; }
@@ -263,8 +261,9 @@ tbody tr:hover{background:rgba(34, 48, 79, 0.5); transform:scale(1.005); box-sha
   <div class="main">
     <div class="topbar">
       <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
-      <h1 id="page-title">Dashboard</h1>
-      <div class="search"><input id="global-search" placeholder="Search clients, projects…" autocomplete="off"></div>
+      <!-- Yahan top title fix kar diya hai -->
+      <h1 id="page-title">Asviro Client Hub</h1>
+      <div class="search"><input id="global-search" placeholder="Search clients or projects…" autocomplete="off"></div>
       <button class="btn btn-primary" id="quick-add">+ New</button>
     </div>
     <div class="content" id="content"></div>
@@ -280,10 +279,6 @@ tbody tr:hover{background:rgba(34, 48, 79, 0.5); transform:scale(1.005); box-sha
    ============================================================ */
 const SUPABASE_URL = 'https://vysxnpnxfonafcnylxmu.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_KD73RIU-GxjcyqnEtR-AiQ_EQxL5PZF'; 
-
-/* ============================================================
-   Asviro Client Hub — Logic
-   ============================================================ */
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -438,12 +433,6 @@ async function nextDisplayId(store, prefix){
   return prefix + '-' + String(max+1).padStart(4,'0');
 }
 
-async function auditLog(entity, entityId, action, details){
-  if (!useCloud) {
-    await dbPut('audit', { id:uid(), timestamp:new Date().toISOString(), entity, entityId, action, details });
-  }
-}
-
 /* ---------- Calculations ---------- */
 const Calc = {
   projReceived(projectId){
@@ -534,10 +523,9 @@ function route(){
   
   fn(parts.slice(1));
   
-  // Add animation to content
   const content = $('#content');
   content.classList.remove('animate-enter');
-  void content.offsetWidth; // trigger reflow
+  void content.offsetWidth; 
   content.classList.add('animate-enter');
 
   $$('#nav a').forEach(a=>a.classList.toggle('active', a.dataset.route===name));
@@ -562,9 +550,16 @@ function buildNav(){
 $('#hamburger').onclick = () => { $('#sidebar').classList.toggle('open'); $('#overlay').classList.toggle('show'); };
 $('#overlay').onclick = () => { $('#sidebar').classList.remove('open'); $('#overlay').classList.remove('show'); };
 $('#quick-add').onclick = () => quickAddMenu();
-$('#global-search').addEventListener('keydown', e => {
-  if(e.key==='Enter'){ location.hash = `#/clients?q=${encodeURIComponent(e.target.value.trim())}`; }
-});
+
+// Auto Search Global
+$('#global-search').addEventListener('input', debounce(e => {
+  const q = e.target.value.trim();
+  if(q.length >= 2) {
+    location.hash = `#/clients?q=${encodeURIComponent(q)}`;
+  } else if(q.length === 0 && location.hash.includes('?q=')) {
+    location.hash = '#/clients';
+  }
+}, 500));
 
 function quickAddMenu(){
   const { close } = openModal('Add New', `
@@ -595,7 +590,6 @@ function quickAddMenu(){
    DASHBOARD
    ============================================================ */
 function renderDashboard(){
-  $('#page-title').textContent = 'Dashboard';
   const totalClients = S.clients.filter(c=>!c.archived).length;
   const active = Calc.activeProjects().length;
   const completed = Calc.completedProjects().length;
@@ -699,7 +693,6 @@ function statCard(label, value, sub, cls=''){
    CLIENTS
    ============================================================ */
 function renderClients(parts){
-  $('#page-title').textContent = 'Clients';
   const params = new URLSearchParams((location.hash.split('?')[1])||'');
   let q = params.get('q') || '';
   let category = params.get('cat') || '';
@@ -708,12 +701,22 @@ function renderClients(parts){
   let showArchived = params.get('arch') === '1';
 
   let list = S.clients.filter(c => showArchived ? c.archived : !c.archived);
+  
+  // SEARCH LOGIC LINKAGE: Client Name, Owner, Mobile, or Project Name
   if(q){
     const ql = q.toLowerCase();
-    list = list.filter(c => (c.name||'').toLowerCase().includes(ql) || (c.owner||'').toLowerCase().includes(ql) || (c.mobile||'').includes(ql) || (c.displayId||'').toLowerCase().includes(ql) || S.projects.some(p=>p.clientId===c.id && (p.name||'').toLowerCase().includes(ql)));
+    list = list.filter(c => 
+       (c.name||'').toLowerCase().includes(ql) || 
+       (c.owner||'').toLowerCase().includes(ql) || 
+       (c.mobile||'').includes(ql) || 
+       (c.displayId||'').toLowerCase().includes(ql) || 
+       S.projects.some(p=>p.clientId===c.id && (p.name||'').toLowerCase().includes(ql))
+    );
   }
+
   if(category) list = list.filter(c=>c.category===category);
   if(status) list = list.filter(c=>c.status===status);
+  
   list.sort((a,b)=>{
     if(sort==='newest') return (b.createdAt||'').localeCompare(a.createdAt||'');
     if(sort==='oldest') return (a.createdAt||'').localeCompare(b.createdAt||'');
@@ -736,7 +739,7 @@ function renderClients(parts){
 
   $('#content').innerHTML = `
     <div class="filters">
-      <input id="f-q" placeholder="Search clients…" value="${esc(q)}">
+      <input id="f-q" placeholder="Search clients or projects…" value="${esc(q)}">
       <select id="f-cat"><option value="">All categories</option>${categories.map(c=>`<option ${category===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
       <select id="f-status"><option value="">All statuses</option>${statuses.map(s=>`<option ${status===s?'selected':''}>${esc(s)}</option>`).join('')}</select>
       <select id="f-sort">
@@ -761,7 +764,7 @@ function renderClients(parts){
                 <td class="num ${out>0?'':'pos'}" style="color:${out>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(out)}</td>
                 <td>${clientStatusBadge(c.status)}</td></tr>`;
             }).join('')}</tbody></table></div>` :
-      `<div class="empty"><div class="icon">👥</div><h3>No clients yet</h3><p>Add your first client to get started.</p><button class="btn btn-primary" onclick="openClientForm()">+ Add Client</button></div>`}
+      `<div class="empty"><div class="icon">👥</div><h3>No clients found</h3><p>Try adjusting your search or add a new client.</p><button class="btn btn-primary" onclick="openClientForm()">+ Add Client</button></div>`}
   `;
 
   const updateUrl = () => {
@@ -773,7 +776,11 @@ function renderClients(parts){
     if($('#f-arch').checked) p.set('arch','1');
     location.hash = '#/clients'+(p.toString()?'?'+p.toString():'');
   };
-  $('#f-q').addEventListener('input', debounce(updateUrl, 250));
+  
+  // Update global search if it exists
+  if($('#global-search') && q) { $('#global-search').value = q; }
+
+  $('#f-q').addEventListener('input', debounce(updateUrl, 400));
   $('#f-cat').addEventListener('change', updateUrl);
   $('#f-status').addEventListener('change', updateUrl);
   $('#f-sort').addEventListener('change', updateUrl);
@@ -791,7 +798,6 @@ function renderClientProfile(parts){
   const id = parts[0];
   const c = S.clients.find(x=>x.id===id);
   if(!c){ $('#content').innerHTML = `<div class="empty"><h3>Client not found</h3><button class="btn btn-primary" onclick="location.hash='#/clients'">Back</button></div>`; return; }
-  $('#page-title').textContent = c.name;
 
   const projects = Calc.clientProjects(c.id);
   const payments = S.payments.filter(p=>p.clientId===c.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
@@ -867,7 +873,6 @@ function parseLinks(text){
    PROJECTS & PAYMENTS & EXPENSES & FOLLOWUPS
    ============================================================ */
 function renderProjects(){
-  $('#page-title').textContent = 'Projects';
   let list = S.projects.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openProjectForm()">+ Add Project</button></div>
@@ -878,7 +883,6 @@ function renderProjects(){
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No projects yet</h3><button class="btn btn-primary" onclick="openProjectForm()">+ Add Project</button></div>`}`;
 }
 function renderPayments(){
-  $('#page-title').textContent = 'Payments';
   let list = S.payments.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openPaymentForm()">+ Add Payment</button></div>
@@ -889,7 +893,6 @@ function renderPayments(){
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No payments recorded</h3><button class="btn btn-primary" onclick="openPaymentForm()">+ Add Payment</button></div>`}`;
 }
 function renderExpenses(){
-  $('#page-title').textContent = 'Expenses';
   let list = S.expenses.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openExpenseForm()">+ Add Expense</button></div>
@@ -897,7 +900,6 @@ function renderExpenses(){
       ${list.map(e=>`<tr><td>${fmtDate(e.date)}</td><td><span class="badge purple">${esc(e.category)}</span></td><td>${esc(e.description)}</td><td class="num" style="color:var(--danger); font-weight:600;">${fmtMoney(e.amount)}</td><td style="text-align:right;"><button class="icon-btn" onclick="deleteExpense('${e.id}')">🗑️</button></td></tr>`).join('')}</tbody></table></div>` : `<div class="empty"><h3>No expenses recorded</h3><button class="btn btn-primary" onclick="openExpenseForm()">+ Add Expense</button></div>`}`;
 }
 function renderFollowups(){
-  $('#page-title').textContent = 'Follow-ups';
   let list = S.followups.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openFollowupForm()">+ Add Follow-up</button></div>
@@ -908,11 +910,9 @@ function renderFollowups(){
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No follow-ups</h3><button class="btn btn-primary" onclick="openFollowupForm()">+ Add Follow-up</button></div>`}`;
 }
 function renderReports(){
-  $('#page-title').textContent = 'Reports';
   $('#content').innerHTML = `<div class="card animate-enter"><h3 class="section-title" style="margin-top:0;">Export Data</h3><p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Download your data for backup or print statements.</p><button class="btn btn-ghost" onclick="window.print()">🖨️ Print Statement</button> <button class="btn btn-primary" onclick="exportJSON()">⬇ Download JSON Backup</button></div>`;
 }
 function renderSettings(){
-  $('#page-title').textContent = 'Settings';
   $('#content').innerHTML = `
     <div class="grid cols-2 animate-enter">
       <div class="card"><div class="stat-label">Backup & Restore</div><p class="stat-sub mt-2" style="margin-bottom:16px;">Download complete JSON backup of your data.</p><button class="btn btn-primary" onclick="exportJSON()">⬇ Download JSON</button> <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">⬆ Restore</button><input type="file" id="import-file" style="display:none" onchange="importJSON(event)"></div>
@@ -927,7 +927,6 @@ function openClientForm(id){
   const c = id ? S.clients.find(x=>x.id===id) : {};
   if(id && !c) return;
   
-  // Naye Categories Add Kiye Gaye Hain
   const CATEGORIES = [
     'Mobile Shop','Coaching Institute','School','Gym','Cosmetic / Beauty',
     'Restaurant','Bakery Shop','Cafe','Grocery / Kirana','Boutique / Fashion',
@@ -935,15 +934,18 @@ function openClientForm(id){
     'Automobile','Electronics','Local Business','Personal Portfolio','Other'
   ];
   
+  // Handling +91 Prefix for WhatsApp
+  const waVal = (c.whatsapp || '').replace(/^\+?91/, '').replace(/\D/g, '');
+
   const { close } = openModal(id?'Edit Client':'Add Client', `
     <form id="form-client" class="form-grid">
       
-      <!-- OWNER NAME PEHLE -->
-      <label>Owner / Contact Person *
+      <!-- Owner Name -->
+      <label>Owner Name *
         <input name="owner" required value="${esc(c.owner||'')}" placeholder="e.g. Rajesh Sharma"></label>
       
-      <!-- BUSINESS NAME BAAD ME -->
-      <label>Business / Client Name *
+      <!-- Business Name -->
+      <label>Business Name *
         <input name="name" required value="${esc(c.name||'')}" placeholder="e.g. Sharma Mobile Shop"></label>
       
       <label>Category
@@ -953,8 +955,15 @@ function openClientForm(id){
         </select></label>
       <label>Mobile Number *
         <input name="mobile" required inputmode="tel" value="${esc(c.mobile||'')}" placeholder="10-digit mobile"></label>
+      
+      <!-- WhatsApp with +91 Prefix -->
       <label>WhatsApp Number
-        <input name="whatsapp" inputmode="tel" value="${esc(c.whatsapp||'')}" placeholder="With country code e.g. 919876543210"></label>
+        <div class="input-group">
+          <span class="prefix">+91</span>
+          <input name="whatsapp" inputmode="tel" value="${esc(waVal)}" placeholder="9876543210" maxlength="10">
+        </div>
+      </label>
+
       <label>Email
         <input name="email" type="email" value="${esc(c.email||'')}"></label>
       <label>Website URL
@@ -992,8 +1001,16 @@ function openClientForm(id){
 
     const fd = new FormData(e.target); const data = Object.fromEntries(fd.entries());
     if(!data.name.trim() || !data.mobile.trim() || !data.owner.trim()) {
-       alert('Name, Owner, and Mobile are required!');
+       alert('Owner Name, Business Name, and Mobile are required!');
        btn.disabled = false; btn.textContent = 'Save'; return;
+    }
+    
+    // Process WhatsApp Number to have '91' prefix for DB
+    if(data.whatsapp) {
+      let cleanWa = data.whatsapp.replace(/\D/g, '');
+      if(cleanWa.length === 10) data.whatsapp = '91' + cleanWa;
+      else if(cleanWa.length === 12 && cleanWa.startsWith('91')) data.whatsapp = cleanWa;
+      else if(cleanWa.length > 0) data.whatsapp = cleanWa; // fallback
     }
     
     let rec = { ...c, id: c.id || uid(), displayId: c.displayId || await nextDisplayId('clients','CL'), createdAt: c.createdAt || new Date().toISOString(), ...data };
