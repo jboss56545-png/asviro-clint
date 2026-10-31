@@ -261,6 +261,7 @@ tbody tr:hover{background:rgba(34, 48, 79, 0.5); transform:scale(1.005); box-sha
   <div class="main">
     <div class="topbar">
       <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+      <!-- Title dynamic rahega -->
       <h1 id="page-title"></h1>
       <div class="search"><input id="global-search" placeholder="Search clients or projects... (Press Enter)" autocomplete="off"></div>
       <button class="btn btn-primary" id="quick-add">+ New</button>
@@ -551,6 +552,7 @@ $('#hamburger').onclick = () => { $('#sidebar').classList.toggle('open'); $('#ov
 $('#overlay').onclick = () => { $('#sidebar').classList.remove('open'); $('#overlay').classList.remove('show'); };
 $('#quick-add').onclick = () => quickAddMenu();
 
+// Top Bar Global Search (Enter dabane par search hoga, no glitch)
 $('#global-search').addEventListener('keydown', e => {
   if(e.key === 'Enter'){
     const q = e.target.value.trim();
@@ -587,7 +589,7 @@ function quickAddMenu(){
    DASHBOARD
    ============================================================ */
 function renderDashboard(){
-  $('#page-title').textContent = 'Asviro Client Hub';
+  $('#page-title').textContent = 'Asviro Client Hub'; // Dashboard par brand name
   
   const totalClients = S.clients.filter(c=>!c.archived).length;
   const active = Calc.activeProjects().length;
@@ -629,7 +631,7 @@ function renderDashboard(){
         ${deadlines.length ? deadlines.slice(0,5).map(p=>{
           const c = S.clients.find(x=>x.id===p.clientId);
           return `<div class="flex between center" style="padding:12px 0;border-bottom:1px solid var(--border)">
-            <div><div style="font-weight:600;font-size:14px;">${esc(p.name)}</div><div class="stat-sub">${esc(c ? (c.owner || c.name) : '—')} · Due ${fmtDate(p.deadline)}</div></div>
+            <div><div style="font-weight:600;font-size:14px;">${esc(p.name)}</div><div class="stat-sub">${esc(c?c.name:'—')} · Due ${fmtDate(p.deadline)}</div></div>
             <span class="badge ${daysBetween(todayStr(), p.deadline)<=3?'red':'yellow'}">${daysBetween(todayStr(), p.deadline)}d</span>
           </div>`;
         }).join('') : `<div class="empty"><div class="icon">📅</div><p>No upcoming deadlines in next 14 days.</p></div>`}
@@ -640,7 +642,7 @@ function renderDashboard(){
           const c = S.clients.find(x=>x.id===f.clientId);
           const overdue = f.date < todayStr();
           return `<div class="flex between center" style="padding:12px 0;border-bottom:1px solid var(--border)">
-            <div><div style="font-weight:600;font-size:14px;">${esc(c ? (c.owner || c.name) : '—')}</div><div class="stat-sub">${esc(f.purpose)} · ${fmtDate(f.date)}</div></div>
+            <div><div style="font-weight:600;font-size:14px;">${esc(c?c.name:'—')}</div><div class="stat-sub">${esc(f.purpose)} · ${fmtDate(f.date)}</div></div>
             <span class="badge ${overdue?'red':'yellow'}">${overdue?'Overdue':'Today'}</span>
           </div>`;
         }).join('') : `<div class="empty"><div class="icon">✅</div><p>No follow-ups due. You're on top of it!</p></div>`}
@@ -668,7 +670,7 @@ function renderDashboard(){
     makeChart('chart-status',{ type:'doughnut', data:{labels:statusLabels,datasets:[{data:Object.values(statusCounts),backgroundColor:['#3b82f6','#22d3ee','#f59e0b','#a855f7','#10b981','#ef4444','#64748b'],borderWidth:0}]}, options:{cutout:'70%',responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8,padding:20}}}} });
   } else emptyChart('chart-status','No projects yet');
 
-  const clientOutstanding = S.clients.map(c=>({name:c.owner || c.name, bal:Calc.clientOutstanding(c.id)})).filter(x=>x.bal>0).sort((a,b)=>b.bal-a.bal).slice(0,6);
+  const clientOutstanding = S.clients.map(c=>({name:c.name, bal:Calc.clientOutstanding(c.id)})).filter(x=>x.bal>0).sort((a,b)=>b.bal-a.bal).slice(0,6);
   if(clientOutstanding.length){
     makeChart('chart-outstanding',{ type:'bar', data:{labels:clientOutstanding.map(x=>x.name),datasets:[{label:'Outstanding',data:clientOutstanding.map(x=>x.bal),backgroundColor:'rgba(245,158,11,.7)',borderColor:'#f59e0b',borderWidth:1,borderRadius:6}]}, options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{callback:v=>fmtMoneyS(v)}},y:{grid:{display:false}}}} });
   } else emptyChart('chart-outstanding','No outstanding balances');
@@ -692,7 +694,7 @@ function statCard(label, value, sub, cls=''){
    CLIENTS
    ============================================================ */
 function renderClients(parts){
-  $('#page-title').textContent = 'Clients';
+  $('#page-title').textContent = 'Clients'; // Topbar title
 
   const params = new URLSearchParams((location.hash.split('?')[1])||'');
   let initialQ = params.get('q') || '';
@@ -731,13 +733,13 @@ function renderClients(parts){
 
     let list = S.clients.filter(c => showArchived ? c.archived : !c.archived);
     
+    // SEARCH LOGIC: Client Name, Owner, Mobile, or Project Name
     if(q){
       const ql = q.toLowerCase();
       list = list.filter(c => 
          (c.name||'').toLowerCase().includes(ql) || 
          (c.owner||'').toLowerCase().includes(ql) || 
          (c.mobile||'').includes(ql) || 
-         (c.whatsapp||'').includes(ql) || 
          (c.displayId||'').toLowerCase().includes(ql) || 
          S.projects.some(p=>p.clientId===c.id && (p.name||'').toLowerCase().includes(ql))
       );
@@ -771,8 +773,8 @@ function renderClients(parts){
                 const out = Calc.clientOutstanding(c.id); const pc = Calc.clientProjects(c.id).length;
                 return `<tr onclick="location.hash='#/client/${c.id}'">
                   <td><span class="badge gray">${esc(c.displayId)}</span></td>
-                  <td><strong style="font-size:14px;color:#fff;">${esc(c.owner || c.name)}</strong>${c.owner && c.name ? `<div class="stat-sub">${esc(c.name)}</div>`:''}</td>
-                  <td>${esc(c.mobile||'—')}<div class="stat-sub">${c.whatsapp ? '+91 ' + esc(c.whatsapp.replace(/^\+?91/, '')) : ''}</div></td>
+                  <td><strong style="font-size:14px;color:#fff;">${esc(c.name)}</strong>${c.owner?`<div class="stat-sub">${esc(c.owner)}</div>`:''}</td>
+                  <td>${esc(c.mobile||'—')}<div class="stat-sub">${esc(c.city||'')}</div></td>
                   <td><span class="badge blue">${pc}</span></td>
                   <td class="num ${out>0?'':'pos'}" style="color:${out>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(out)}</td>
                   <td>${clientStatusBadge(c.status)}</td></tr>`;
@@ -785,6 +787,7 @@ function renderClients(parts){
     }
   };
 
+  // Smooth filtering without page reload
   $('#f-q').addEventListener('input', debounce(renderList, 300));
   $('#f-cat').addEventListener('change', renderList);
   $('#f-status').addEventListener('change', renderList);
@@ -807,23 +810,22 @@ function renderClientProfile(parts){
   const c = S.clients.find(x=>x.id===id);
   if(!c){ $('#content').innerHTML = `<div class="empty"><h3>Client not found</h3><button class="btn btn-primary" onclick="location.hash='#/clients'">Back</button></div>`; return; }
   
-  $('#page-title').textContent = c.owner || c.name;
+  $('#page-title').textContent = c.name; // Topbar title
 
   const projects = Calc.clientProjects(c.id);
   const payments = S.payments.filter(p=>p.clientId===c.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const expenses = S.expenses.filter(e=>e.clientId===c.id);
   const followups = S.followups.filter(f=>f.clientId===c.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const agreed = Calc.clientAgreed(c.id);
   const received = Calc.clientReceived(c.id);
   const out = Calc.clientOutstanding(c.id);
   const exp = Calc.clientExpenses(c.id);
   const pct = agreed>0 ? Math.min(100, (received/agreed)*100) : 0;
-  
-  const displayWa = c.whatsapp ? '+91 ' + c.whatsapp.replace(/^\+?91/, '') : '—';
 
   $('#content').innerHTML = `
     <div class="profile-head animate-enter">
       <div class="flex between center" style="flex-wrap:wrap;gap:12px">
-        <div><h2>${esc(c.owner || c.name)} <span class="badge cyan">${esc(c.displayId)}</span></h2><div class="meta">${c.owner && c.name ? esc(c.name) + ' · ' : ''}${esc(c.category||'—')} · ${esc(c.mobile||'—')}</div></div>
+        <div><h2>${esc(c.name)} <span class="badge cyan">${esc(c.displayId)}</span></h2><div class="meta">${esc(c.owner||'—')} · ${esc(c.category||'—')} · ${esc(c.mobile||'—')}</div></div>
         <div class="flex gap">
           <button class="btn btn-ghost btn-sm" onclick="openClientForm('${c.id}')">Edit</button>
           <button class="btn btn-ghost btn-sm" onclick="toggleArchiveClient('${c.id}')">${c.archived?'Unarchive':'Archive'}</button>
@@ -837,10 +839,20 @@ function renderClientProfile(parts){
       <div class="card">
         <div class="stat-label">Contact & Business</div>
         <div class="mt-2" style="font-size:13px;line-height:2;">
-          ${c.mobile ? row('Mobile', '', c.mobile) : ''}
-          ${c.whatsapp ? row('WhatsApp', waLink(c.whatsapp,'Hello '+c.name+', ')+' target="_blank" rel="noopener"', displayWa) : ''}
-          ${c.mapsUrl ? row('Google Maps', c.mapsUrl, 'Open Location') : ''}
+          ${row('WhatsApp', c.whatsapp?waLink(c.whatsapp,'Hello '+c.name+', ')+' target="_blank" rel="noopener"':null, c.whatsapp||'—')}
+          ${c.email?row('Email', `mailto:${c.email}`, c.email):''}
+          ${c.websiteUrl?row('Website', c.websiteUrl, c.websiteUrl):''}
+          ${c.mapsUrl?row('Maps', c.mapsUrl, 'Open Location'):''}
+          ${c.address?row('Address','',c.address):''}
+          ${c.city||c.state?row('City / State','',[c.city,c.state].filter(Boolean).join(', ')):''}
+          ${c.source?row('Source','',c.source):''}
+          ${c.firstContactDate?row('First Contact','',fmtDate(c.firstContactDate)):''}
         </div>
+        ${c.notes?`<div class="mt-2"><div class="stat-label">Notes</div><div class="mt-1" style="font-size:13px;white-space:pre-wrap;background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;">${esc(c.notes)}</div></div>`:''}
+        ${c.links?`<div class="mt-2"><div class="stat-label">Documents & Links</div>
+          <div class="mt-1" style="font-size:13px">${parseLinks(c.links).map(l=>
+            `<div style="margin-bottom:4px;">${l.url?`<a href="${esc(l.url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;"><span>🔗</span>${esc(l.label)}</a>`:esc(l.label)}</div>`
+          ).join('')}</div></div>`:''}
       </div>
       <div class="card">
         <div class="flex between center"><div class="stat-label">Follow-ups</div><button class="btn btn-sm btn-ghost" onclick="openFollowupForm(null, '${c.id}')">+ Add</button></div>
@@ -862,34 +874,41 @@ function renderClientProfile(parts){
 }
 function row(label, href, value){ return `<div><strong style="color:var(--muted);font-weight:600;display:inline-block;min-width:100px">${esc(label)}</strong>${href?`<a href="${esc(href)}" target="_blank" rel="noopener">${esc(value)}</a>`:esc(value)}</div>`; }
 function waLink(number, message){ const n = (number||'').replace(/\D/g,''); return n ? `https://wa.me/${n}${message?'?text='+encodeURIComponent(message):''}` : '#'; }
+function parseLinks(text){
+  return (text||'').split('\n').map(line=>{
+    const [a,b] = line.split('|').map(s=>s.trim());
+    if(!a) return null;
+    return b ? {label:a, url:b} : {label:a, url:''};
+  }).filter(Boolean);
+}
 
 /* ============================================================
    PROJECTS & PAYMENTS & EXPENSES & FOLLOWUPS
    ============================================================ */
 function renderProjects(){
-  $('#page-title').textContent = 'Projects';
+  $('#page-title').textContent = 'Projects'; // Topbar title
   let list = S.projects.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openProjectForm()">+ Add Project</button></div>
     ${list.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>ID</th><th>Project</th><th>Client</th><th>Status</th><th class="num">Agreed</th><th class="num">Balance</th><th>Deadline</th></tr></thead><tbody>
       ${list.map(p=>{
         const c = S.clients.find(x=>x.id===p.clientId); const bal = Calc.projBalance(p);
-        return `<tr onclick="openProjectDetail('${p.id}')"><td><span class="badge gray">${esc(p.displayId)}</span></td><td><strong style="color:#fff;">${esc(p.name)}</strong></td><td><strong style="color:#fff;">${esc(c ? (c.owner || c.name) : '—')}</strong></td><td>${projectStatusBadge(p.status)}</td><td class="num">${fmtMoney(p.agreedPrice)}</td><td class="num" style="color:${bal>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(bal)}</td><td>${fmtDate(p.deadline)}</td></tr>`;
+        return `<tr onclick="openProjectDetail('${p.id}')"><td><span class="badge gray">${esc(p.displayId)}</span></td><td><strong style="color:#fff;">${esc(p.name)}</strong></td><td>${esc(c?c.name:'—')}</td><td>${projectStatusBadge(p.status)}</td><td class="num">${fmtMoney(p.agreedPrice)}</td><td class="num" style="color:${bal>0?'var(--warning)':'var(--success)'}; font-weight:600;">${fmtMoney(bal)}</td><td>${fmtDate(p.deadline)}</td></tr>`;
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No projects yet</h3><button class="btn btn-primary" onclick="openProjectForm()">+ Add Project</button></div>`}`;
 }
 function renderPayments(){
-  $('#page-title').textContent = 'Payments';
+  $('#page-title').textContent = 'Payments'; // Topbar title
   let list = S.payments.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openPaymentForm()">+ Add Payment</button></div>
     ${list.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>Receipt</th><th>Date</th><th>Client</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(p=>{ const c = S.clients.find(x=>x.id===p.clientId);
-        return `<tr><td>${esc(p.displayId)}</td><td>${fmtDate(p.date)}</td><td><strong style="color:#fff;">${esc(c ? (c.owner || c.name) : '—')}</strong></td><td class="num" style="color:var(--success); font-weight:600;">${fmtMoney(p.amount)}</td><td><span class="badge ${p.status==='Confirmed'?'green':'yellow'}">${esc(p.status)}</span></td>
+        return `<tr><td>${esc(p.displayId)}</td><td>${fmtDate(p.date)}</td><td>${esc(c?c.name:'—')}</td><td class="num" style="color:var(--success); font-weight:600;">${fmtMoney(p.amount)}</td><td><span class="badge ${p.status==='Confirmed'?'green':'yellow'}">${esc(p.status)}</span></td>
         <td style="text-align:right;"><button class="icon-btn" onclick="openPaymentForm('${p.id}')">✏️</button> <button class="icon-btn" onclick="printReceipt('${p.id}')">🖨️</button> <button class="icon-btn" onclick="deletePayment('${p.id}')">🗑️</button></td></tr>`;
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No payments recorded</h3><button class="btn btn-primary" onclick="openPaymentForm()">+ Add Payment</button></div>`}`;
 }
 function renderExpenses(){
-  $('#page-title').textContent = 'Expenses';
+  $('#page-title').textContent = 'Expenses'; // Topbar title
   let list = S.expenses.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openExpenseForm()">+ Add Expense</button></div>
@@ -897,22 +916,22 @@ function renderExpenses(){
       ${list.map(e=>`<tr><td>${fmtDate(e.date)}</td><td><span class="badge purple">${esc(e.category)}</span></td><td>${esc(e.description)}</td><td class="num" style="color:var(--danger); font-weight:600;">${fmtMoney(e.amount)}</td><td style="text-align:right;"><button class="icon-btn" onclick="deleteExpense('${e.id}')">🗑️</button></td></tr>`).join('')}</tbody></table></div>` : `<div class="empty"><h3>No expenses recorded</h3><button class="btn btn-primary" onclick="openExpenseForm()">+ Add Expense</button></div>`}`;
 }
 function renderFollowups(){
-  $('#page-title').textContent = 'Follow-ups';
+  $('#page-title').textContent = 'Follow-ups'; // Topbar title
   let list = S.followups.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   $('#content').innerHTML = `
     <div class="filters"><button class="btn btn-primary" onclick="openFollowupForm()">+ Add Follow-up</button></div>
     ${list.length ? `<div class="table-wrap animate-enter"><table><thead><tr><th>Date</th><th>Client</th><th>Purpose</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(f=>{ const c = S.clients.find(x=>x.id===f.clientId);
-        return `<tr><td>${fmtDate(f.date)}</td><td><strong style="color:#fff;">${esc(c ? (c.owner || c.name) : '—')}</strong></td><td>${esc(f.purpose)}</td><td><span class="badge ${f.status==='Completed'?'green':f.status==='Rescheduled'?'yellow':'blue'}">${esc(f.status)}</span></td>
+        return `<tr><td>${fmtDate(f.date)}</td><td><strong style="color:#fff;">${esc(c?c.name:'—')}</strong></td><td>${esc(f.purpose)}</td><td><span class="badge ${f.status==='Completed'?'green':f.status==='Rescheduled'?'yellow':'blue'}">${esc(f.status)}</span></td>
         <td style="text-align:right;">${f.status==='Pending'?`<button class="icon-btn" onclick="completeFollowup('${f.id}')">✅</button>`:''} <button class="icon-btn" onclick="deleteFollowup('${f.id}')">🗑️</button></td></tr>`;
       }).join('')}</tbody></table></div>` : `<div class="empty"><h3>No follow-ups</h3><button class="btn btn-primary" onclick="openFollowupForm()">+ Add Follow-up</button></div>`}`;
 }
 function renderReports(){
-  $('#page-title').textContent = 'Reports';
+  $('#page-title').textContent = 'Reports'; // Topbar title
   $('#content').innerHTML = `<div class="card animate-enter"><h3 class="section-title" style="margin-top:0;">Export Data</h3><p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Download your data for backup or print statements.</p><button class="btn btn-ghost" onclick="window.print()">🖨️ Print Statement</button> <button class="btn btn-primary" onclick="exportJSON()">⬇ Download JSON Backup</button></div>`;
 }
 function renderSettings(){
-  $('#page-title').textContent = 'Settings';
+  $('#page-title').textContent = 'Settings'; // Topbar title
   $('#content').innerHTML = `
     <div class="grid cols-2 animate-enter">
       <div class="card"><div class="stat-label">Backup & Restore</div><p class="stat-sub mt-2" style="margin-bottom:16px;">Download complete JSON backup of your data.</p><button class="btn btn-primary" onclick="exportJSON()">⬇ Download JSON</button> <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">⬆ Restore</button><input type="file" id="import-file" style="display:none" onchange="importJSON(event)"></div>
@@ -939,31 +958,56 @@ function openClientForm(id){
   const { close } = openModal(id?'Edit Client':'Add Client', `
     <form id="form-client" class="form-grid">
       
-      <label class="full">Business Name *
-        <input name="name" required value="${esc(c.name||'')}" placeholder="e.g. Sharma Mobile Shop"></label>
-
-      <label class="full">Owner Name *
+      <!-- Owner Name -->
+      <label>Owner Name *
         <input name="owner" required value="${esc(c.owner||'')}" placeholder="e.g. Rajesh Sharma"></label>
-
-      <label class="full">Mobile Number *
-        <input name="mobile" required inputmode="tel" value="${esc(c.mobile||'')}" placeholder="10-digit mobile"></label>
       
-      <label class="full">Category
+      <!-- Business Name -->
+      <label>Business Name *
+        <input name="name" required value="${esc(c.name||'')}" placeholder="e.g. Sharma Mobile Shop"></label>
+      
+      <label>Category
         <select name="category">
           <option value="">Select…</option>
           ${CATEGORIES.map(x=>`<option ${c.category===x?'selected':''}>${x}</option>`).join('')}
         </select></label>
-
-      <label class="full">WhatsApp Number
+      <label>Mobile Number *
+        <input name="mobile" required inputmode="tel" value="${esc(c.mobile||'')}" placeholder="10-digit mobile"></label>
+      
+      <!-- WhatsApp with +91 Prefix -->
+      <label>WhatsApp Number
         <div class="input-group">
           <span class="prefix">+91</span>
           <input name="whatsapp" inputmode="tel" value="${esc(waVal)}" placeholder="9876543210" maxlength="10">
         </div>
       </label>
 
-      <label class="full">Google Maps URL
-        <input name="mapsUrl" value="${esc(c.mapsUrl||'')}" placeholder="https://maps.google.com/..."></label>
-
+      <label>Email
+        <input name="email" type="email" value="${esc(c.email||'')}"></label>
+      <label>Website URL
+        <input name="websiteUrl" value="${esc(c.websiteUrl||'')}"></label>
+      <label class="full">Full Address
+        <textarea name="address" rows="2">${esc(c.address||'')}</textarea></label>
+      <label>City <input name="city" value="${esc(c.city||'')}"></label>
+      <label>State <input name="state" value="${esc(c.state||'')}"></label>
+      <label>Google Maps URL <input name="mapsUrl" value="${esc(c.mapsUrl||'')}"></label>
+      <label>Client Source
+        <select name="source">
+          <option value="">Select…</option>
+          ${['Referral','Direct Visit','WhatsApp','Online','Social Media','Other']
+            .map(x=>`<option ${c.source===x?'selected':''}>${x}</option>`).join('')}
+        </select></label>
+      <label>First Contact Date
+        <input name="firstContactDate" type="date" value="${esc(c.firstContactDate||todayStr())}"></label>
+      <label>Status
+        <select name="status">
+          ${['Lead','Contacted','Interested','Confirmed','Active','Completed','Cancelled']
+            .map(x=>`<option ${(c.status||'Lead')===x?'selected':''}>${x}</option>`).join('')}
+        </select></label>
+      <label class="full">Notes
+        <textarea name="notes" rows="2">${esc(c.notes||'')}</textarea></label>
+      <label class="full">Documents & Links (one per line: <em>Label | URL</em>)
+        <textarea name="links" rows="2" placeholder="Design mockup | https://drive.google.com/...">${esc(c.links||'')}</textarea></label>
       <div class="form-error full" id="err"></div>
       <div class="form-actions full"><button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button type="submit" class="btn btn-primary">${id?'Save Changes':'Create Client'}</button></div>
     </form>`, {wide:true});
@@ -974,8 +1018,8 @@ function openClientForm(id){
     btn.disabled = true; btn.innerHTML = 'Saving...';
 
     const fd = new FormData(e.target); const data = Object.fromEntries(fd.entries());
-    if(!data.name.trim() || !data.owner.trim() || !data.mobile.trim()) {
-       alert('Business Name, Owner Name, and Mobile Number are required!');
+    if(!data.name.trim() || !data.mobile.trim() || !data.owner.trim()) {
+       alert('Owner Name, Business Name, and Mobile are required!');
        btn.disabled = false; btn.textContent = 'Save'; return;
     }
     
@@ -987,7 +1031,7 @@ function openClientForm(id){
     }
     
     let rec = { ...c, id: c.id || uid(), displayId: c.displayId || await nextDisplayId('clients','CL'), createdAt: c.createdAt || new Date().toISOString(), ...data };
-    rec = sanitizeRecord(rec); 
+    rec = sanitizeRecord(rec, ['firstContactDate']); 
 
     try { 
       await dbPut('clients', rec); 
@@ -1013,8 +1057,10 @@ function openProjectForm(id, clientId){
       <label>Client *
         <select name="clientId" required>
           <option value="">Select client…</option>
-          ${clients.map(c=>`<option value="${c.id}" ${p.clientId===c.id?'selected':''}>${esc(c.owner || c.name)}</option>`).join('')}
+          ${clients.map(c=>`<option value="${c.id}" ${p.clientId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
         </select></label>
+      <label>Project Type
+        <input name="type" value="${esc(p.type||'')}" placeholder="e.g. Business Website"></label>
       <label>Agreed Project Price (₹) *
         <input name="agreedPrice" type="number" min="0" step="0.01" required value="${p.agreedPrice!=null?p.agreedPrice:''}"></label>
       <label>Start Date
@@ -1036,6 +1082,12 @@ function openProjectForm(id, clientId){
         <input name="deliveryDate" type="date" value="${esc(p.deliveryDate||'')}"></label>
       <label>Live Website URL
         <input name="liveUrl" value="${esc(p.liveUrl||'')}" placeholder="https://..."></label>
+      <label>GitHub / Repository URL
+        <input name="repoUrl" value="${esc(p.repoUrl||'')}" placeholder="https://github.com/..."></label>
+      <label class="full">Project Description
+        <textarea name="description" rows="2">${esc(p.description||'')}</textarea></label>
+      <label class="full">Notes
+        <textarea name="notes" rows="2">${esc(p.notes||'')}</textarea></label>
       <div class="form-error full" id="proj-err"></div>
       <div class="form-actions full"><button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button type="submit" class="btn btn-primary">${id?'Save Changes':'Create Project'}</button></div>
     </form>`, {wide:true});
@@ -1054,11 +1106,11 @@ function openProjectForm(id, clientId){
     let rec = { 
       ...p, id: p.id || uid(), displayId: p.displayId || await nextDisplayId('projects','PR'),
       createdAt: p.createdAt || new Date().toISOString(),
-      clientId: data.clientId, name: data.name.trim(),
-      agreedPrice: data.agreedPrice,
+      clientId: data.clientId, name: data.name.trim(), type: data.type,
+      description: data.description, agreedPrice: data.agreedPrice,
       startDate: data.startDate, deadline: data.deadline, status: data.status,
       domainCost: data.domainCost, hostingCost: data.hostingCost, otherExpenses: data.otherExpenses,
-      deliveryDate: data.deliveryDate, liveUrl: data.liveUrl
+      deliveryDate: data.deliveryDate, liveUrl: data.liveUrl, repoUrl: data.repoUrl, notes: data.notes
     };
     rec = sanitizeRecord(rec, ['startDate','deadline','deliveryDate'], ['agreedPrice','domainCost','hostingCost','otherExpenses'], ['clientId']);
 
@@ -1090,7 +1142,7 @@ function openPaymentForm(id, presetClientId, presetProjectId){
     <form id="form-pay" class="form-grid">
       <label>Client *
         <select name="clientId" id="pay-client" required>
-          ${clients.map(c=>`<option value="${c.id}" ${defaultClientId===c.id?'selected':''}>${esc(c.owner || c.name)}</option>`).join('')}
+          ${clients.map(c=>`<option value="${c.id}" ${defaultClientId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
         </select></label>
       <label>Project *
         <select name="projectId" id="pay-proj" required>
@@ -1188,7 +1240,7 @@ function openExpenseForm(id){
       <label>Linked Client (optional)
         <select name="clientId">
           <option value="">— None —</option>
-          ${S.clients.filter(c=>!c.archived).map(c=>`<option value="${c.id}" ${e.clientId===c.id?'selected':''}>${esc(c.owner || c.name)}</option>`).join('')}
+          ${S.clients.filter(c=>!c.archived).map(c=>`<option value="${c.id}" ${e.clientId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
         </select></label>
       <label>Linked Project (optional)
         <select name="projectId">
@@ -1241,7 +1293,7 @@ function openFollowupForm(id, clientId){
     <form id="form-fu" class="form-grid">
       <label>Client *
         <select name="clientId" required>
-          ${clients.map(c=>`<option value="${c.id}" ${f.clientId===c.id?'selected':''}>${esc(c.owner || c.name)}</option>`).join('')}
+          ${clients.map(c=>`<option value="${c.id}" ${f.clientId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
         </select></label>
       <label>Follow-up Date *
         <input name="date" type="date" required value="${esc(f.date||todayStr())}"></label>
@@ -1298,12 +1350,8 @@ async function completeFollowup(id){ const f=S.followups.find(x=>x.id===id); f.s
 
 function openProjectDetail(id){ 
   const p = S.projects.find(x=>x.id===id); if(!p) return; 
-  const c = S.clients.find(x=>x.id===p.clientId);
   const rec = Calc.projReceived(p.id); const bal = Calc.projBalance(p); const exp = Calc.projExpenses(p); const net = Calc.projNet(p); const st = Calc.projPayStatus(p);
   const payments = S.payments.filter(x=>x.projectId===p.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-
-  const waReminderMsg = `Hello ${c ? (c.owner || c.name) : 'Client'},%0A%0AThis is a gentle reminder regarding the pending payment for your project *${p.name}*.%0A%0A*Total Agreed:* ₹${p.agreedPrice}%0A*Received:* ₹${rec}%0A*Balance Due:* ₹${bal}%0A%0AKindly let us know when you can process the payment.%0A%0AThank you!`;
-  const waLink = c && c.whatsapp ? `https://wa.me/${c.whatsapp}?text=${waReminderMsg}` : '#';
 
   openModal('Project: '+p.name, `
     <div class="grid cols-2" style="margin-bottom:16px">
@@ -1315,9 +1363,11 @@ function openProjectDetail(id){
     <div class="card" style="background:rgba(0,0,0,0.2);">
       <div class="stat-sub">Status</div>
       <div class="mt-1" style="font-size:15px;">${projectStatusBadge(p.status)} ${payStatusBadge(st)}</div>
-      <div class="stat-sub mt-2">Client: <strong style="color:#fff;">${esc(c ? (c.owner || c.name) : '—')}</strong></div>
+      <div class="stat-sub mt-2">Type: ${esc(p.type||'—')}</div>
       <div class="stat-sub">Deadline: ${fmtDate(p.deadline)} · Delivery: ${fmtDate(p.deliveryDate)}</div>
+      ${p.description?`<div class="mt-2"><div class="stat-label">Description</div><p style="margin:6px 0;font-size:13px;color:#ccc;">${esc(p.description)}</p></div>`:''}
       ${p.liveUrl?`<div class="stat-sub mt-2">Live: <a href="${esc(p.liveUrl)}" target="_blank" rel="noopener">${esc(p.liveUrl)}</a></div>`:''}
+      ${p.repoUrl?`<div class="stat-sub">Repo: <a href="${esc(p.repoUrl)}" target="_blank" rel="noopener">${esc(p.repoUrl)}</a></div>`:''}
       <div class="stat-sub mt-2">Net earnings: <strong style="color:${net>=0?'var(--success)':'var(--danger)'}; font-size:14px;">${fmtMoney(net)}</strong></div>
     </div>
     <h3 class="section-title" style="margin-top:20px;">Payments (${payments.length})</h3>
@@ -1331,151 +1381,14 @@ function openProjectDetail(id){
           </div>
         </div>`).join(''):`<div class="empty" style="padding:30px"><p>No payments yet.</p></div>`}
     </div>
-    <div class="form-actions" style="border:none; padding-top:10px; flex-wrap:wrap; gap:10px; justify-content:flex-start;">
+    <div class="form-actions" style="border:none; padding-top:10px;">
       <button class="btn btn-ghost" onclick="openPaymentForm(null,null,'${p.id}')">+ Payment</button>
-      ${bal > 0 ? `<a href="${waLink}" target="_blank" class="btn btn-success">💬 Send WhatsApp Reminder</a>` : ''}
-      <button class="btn btn-primary" onclick="generateInvoice('${p.id}')">🖨️ Generate Invoice</button>
-      <button class="btn btn-ghost" onclick="openProjectForm('${p.id}')">Edit</button>
+      <button class="btn btn-primary" onclick="openProjectForm('${p.id}')">Edit</button>
       <button class="btn btn-danger" onclick="deleteProject('${p.id}')">Delete</button>
-      <button class="btn btn-ghost" style="margin-left:auto;" onclick="this.closest('.modal-overlay').remove()">Close</button>
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">Close</button>
     </div>
   `, {wide:true});
 }
-
-/* ---------- NEW FEATURE: INVOICE GENERATOR ---------- */
-function generateInvoice(projectId) {
-  const p = S.projects.find(x=>x.id===projectId);
-  const c = S.clients.find(x=>x.id===p.clientId);
-  const payments = S.payments.filter(x=>x.projectId===p.id && x.status==='Confirmed').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const rec = Calc.projReceived(p.id);
-  const bal = Calc.projBalance(p);
-
-  const invoiceHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Invoice - ${p.name}</title>
-      <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; margin: 0; padding: 40px; }
-        .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); font-size: 16px; line-height: 24px; color: #555; }
-        .invoice-box table { width: 100%; line-height: inherit; text-align: left; border-collapse: collapse; }
-        .invoice-box table td { padding: 5px; vertical-align: top; }
-        .invoice-box table tr.top table td { padding-bottom: 20px; }
-        .invoice-box table tr.top table td.title { font-size: 45px; line-height: 45px; color: #333; font-weight: bold; }
-        .invoice-box table tr.information table td { padding-bottom: 40px; }
-        .invoice-box table tr.heading td { background: #eee; border-bottom: 1px solid #ddd; font-weight: bold; }
-        .invoice-box table tr.details td { padding-bottom: 20px; }
-        .invoice-box table tr.item td { border-bottom: 1px solid #eee; }
-        .invoice-box table tr.item.last td { border-bottom: none; }
-        .invoice-box table tr.total td:nth-child(2) { border-top: 2px solid #eee; font-weight: bold; }
-        .text-right { text-align: right; }
-        .text-green { color: #10b981; }
-        .text-red { color: #ef4444; }
-        @media only screen and (max-width: 600px) {
-          .invoice-box table tr.top table td { width: 100%; display: block; text-align: center; }
-          .invoice-box table tr.information table td { width: 100%; display: block; text-align: center; }
-        }
-        @media print {
-          body { padding: 0; -webkit-print-color-adjust: exact; }
-          .invoice-box { border: none; box-shadow: none; padding: 0; max-width: 100%; }
-          .no-print { display: none !important; }
-        }
-        .print-btn { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #3b82f6; color: #fff; text-decoration: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-      </style>
-    </head>
-    <body>
-      <div style="text-align: center;" class="no-print">
-        <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
-      </div>
-      <div class="invoice-box">
-        <table cellpadding="0" cellspacing="0">
-          <tr class="top">
-            <td colspan="2">
-              <table>
-                <tr>
-                  <td class="title" style="color: #3b82f6;">INVOICE</td>
-                  <td class="text-right">
-                    <strong>Invoice #:</strong> ${p.displayId || 'N/A'}<br>
-                    <strong>Date:</strong> ${new Date().toLocaleDateString('en-IN')}<br>
-                    <strong>Project:</strong> ${p.name}
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr class="information">
-            <td colspan="2">
-              <table>
-                <tr>
-                  <td>
-                    <strong>Billed To:</strong><br>
-                    ${c ? (c.owner || c.name) : 'Client'}<br>
-                    ${c && c.name && c.owner ? c.name + '<br>' : ''}
-                    ${c && c.mobile ? c.mobile : ''}<br>
-                    ${c && c.whatsapp ? 'WA: +91 ' + c.whatsapp.replace(/^\+?91/, '') : ''}
-                  </td>
-                  <td class="text-right">
-                    <strong>From:</strong><br>
-                    Asviro Client Hub<br>
-                    Web Development Services<br>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr class="heading">
-            <td>Description</td>
-            <td class="text-right">Amount</td>
-          </tr>
-          <tr class="item">
-            <td>Project Development: ${p.name}</td>
-            <td class="text-right">₹${(p.agreedPrice || 0).toLocaleString('en-IN')}</td>
-          </tr>
-          <tr class="total">
-            <td></td>
-            <td class="text-right">
-               Total Agreed: ₹${(p.agreedPrice || 0).toLocaleString('en-IN')}<br>
-               <span class="text-green">Total Received: ₹${(rec || 0).toLocaleString('en-IN')}</span><br>
-               <span class="${bal > 0 ? 'text-red' : 'text-green'}" style="font-size: 18px; margin-top: 5px; display: inline-block;">
-                 Balance Due: ₹${(bal || 0).toLocaleString('en-IN')}
-               </span>
-            </td>
-          </tr>
-        </table>
-        
-        ${payments.length > 0 ? `
-          <div style="margin-top: 40px;">
-            <h4 style="margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Payment History</h4>
-            <table>
-              <tr class="heading">
-                <td>Date</td>
-                <td>Method</td>
-                <td class="text-right">Amount Paid</td>
-              </tr>
-              ${payments.map(pay => `
-                <tr class="item">
-                  <td>${fmtDate(pay.date)}</td>
-                  <td>${pay.method || 'Cash'} ${pay.refId ? `(Ref: ${pay.refId})` : ''}</td>
-                  <td class="text-right">₹${(pay.amount || 0).toLocaleString('en-IN')}</td>
-                </tr>
-              `).join('')}
-            </table>
-          </div>
-        ` : ''}
-        
-        <div style="margin-top: 40px; text-align: center; color: #888; font-size: 12px;">
-          Thank you for your business!
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  const newWin = window.open('', '_blank');
-  newWin.document.write(invoiceHtml);
-  newWin.document.close();
-}
-
 function printReceipt(id){ window.print(); }
 function printClientStatement(){ window.print(); }
 
@@ -1520,7 +1433,7 @@ window.toggleArchiveClient = toggleArchiveClient; window.printReceipt = printRec
 window.openInvoice = openProjectDetail; window.printClientStatement = printClientStatement;
 window.exportJSON = exportJSON; window.importJSON = importJSON;
 window.wipeAll = wipeAll; window.completeFollowup = completeFollowup;
-window.openProjectDetail = openProjectDetail; window.generateInvoice = generateInvoice;
+window.openProjectDetail = openProjectDetail;
 </script>
 </body>
 </html>
