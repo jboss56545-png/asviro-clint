@@ -966,11 +966,14 @@ function openClientForm(id){
       <label>Business Name *
         <input name="name" required value="${esc(c.name||'')}" placeholder="e.g. Sharma Mobile Shop"></label>
       
+      <!-- Category -->
       <label>Category
         <select name="category">
           <option value="">Select…</option>
           ${CATEGORIES.map(x=>`<option ${c.category===x?'selected':''}>${x}</option>`).join('')}
         </select></label>
+      
+      <!-- Mobile Number -->
       <label>Mobile Number *
         <input name="mobile" required inputmode="tel" value="${esc(c.mobile||'')}" placeholder="10-digit mobile"></label>
       
@@ -982,34 +985,23 @@ function openClientForm(id){
         </div>
       </label>
 
-      <label>Email
-        <input name="email" type="email" value="${esc(c.email||'')}"></label>
-      <label>Website URL
-        <input name="websiteUrl" value="${esc(c.websiteUrl||'')}"></label>
-      <label class="full">Full Address
-        <textarea name="address" rows="2">${esc(c.address||'')}</textarea></label>
-      <label>City <input name="city" value="${esc(c.city||'')}"></label>
-      <label>State <input name="state" value="${esc(c.state||'')}"></label>
-      <label>Google Maps URL <input name="mapsUrl" value="${esc(c.mapsUrl||'')}"></label>
-      <label>Client Source
+      <!-- Google Maps URL -->
+      <label>Google Maps URL 
+        <input name="mapsUrl" value="${esc(c.mapsUrl||'')}" placeholder="https://maps.google.com/..."></label>
+      
+      <!-- Client Source -->
+      <label class="full">Client Source
         <select name="source">
           <option value="">Select…</option>
           ${['Referral','Direct Visit','WhatsApp','Online','Social Media','Other']
             .map(x=>`<option ${c.source===x?'selected':''}>${x}</option>`).join('')}
         </select></label>
-      <label>First Contact Date
-        <input name="firstContactDate" type="date" value="${esc(c.firstContactDate||todayStr())}"></label>
-      <label>Status
-        <select name="status">
-          ${['Lead','Contacted','Interested','Confirmed','Active','Completed','Cancelled']
-            .map(x=>`<option ${(c.status||'Lead')===x?'selected':''}>${x}</option>`).join('')}
-        </select></label>
-      <label class="full">Notes
-        <textarea name="notes" rows="2">${esc(c.notes||'')}</textarea></label>
-      <label class="full">Documents & Links (one per line: <em>Label | URL</em>)
-        <textarea name="links" rows="2" placeholder="Design mockup | https://drive.google.com/...">${esc(c.links||'')}</textarea></label>
+
       <div class="form-error full" id="err"></div>
-      <div class="form-actions full"><button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button type="submit" class="btn btn-primary">${id?'Save Changes':'Create Client'}</button></div>
+      <div class="form-actions full">
+        <button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button type="submit" class="btn btn-primary">${id?'Save Changes':'Create Client'}</button>
+      </div>
     </form>`, {wide:true});
   
   document.getElementById('form-client').onsubmit = async (e) => {
@@ -1030,7 +1022,15 @@ function openClientForm(id){
       else if(cleanWa.length > 0) data.whatsapp = cleanWa; 
     }
     
-    let rec = { ...c, id: c.id || uid(), displayId: c.displayId || await nextDisplayId('clients','CL'), createdAt: c.createdAt || new Date().toISOString(), ...data };
+    let rec = { 
+      ...c, 
+      id: c.id || uid(), 
+      displayId: c.displayId || await nextDisplayId('clients','CL'), 
+      createdAt: c.createdAt || new Date().toISOString(), 
+      status: c.status || 'Lead',
+      firstContactDate: c.firstContactDate || todayStr(),
+      ...data 
+    };
     rec = sanitizeRecord(rec, ['firstContactDate']); 
 
     try { 
@@ -1052,44 +1052,35 @@ function openProjectForm(id, clientId){
   
   const { close } = openModal(id?'Edit Project':'Add Project', `
     <form id="form-proj" class="form-grid">
+      
+      <!-- Project Name -->
       <label class="full">Project Name *
         <input name="name" required value="${esc(p.name||'')}" placeholder="e.g. Restaurant Website"></label>
+      
+      <!-- Client -->
       <label>Client *
         <select name="clientId" required>
           <option value="">Select client…</option>
           ${clients.map(c=>`<option value="${c.id}" ${p.clientId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
         </select></label>
-      <label>Project Type
-        <input name="type" value="${esc(p.type||'')}" placeholder="e.g. Business Website"></label>
+      
+      <!-- Agreed Project Price -->
       <label>Agreed Project Price (₹) *
         <input name="agreedPrice" type="number" min="0" step="0.01" required value="${p.agreedPrice!=null?p.agreedPrice:''}"></label>
-      <label>Start Date
-        <input name="startDate" type="date" value="${esc(p.startDate||todayStr())}"></label>
-      <label>Deadline
-        <input name="deadline" type="date" value="${esc(p.deadline||'')}"></label>
-      <label>Status
-        <select name="status">
-          ${['Not Started','In Progress','Waiting for Client','Revision','Completed','Delivered','Cancelled']
-            .map(s=>`<option ${(p.status||'Not Started')===s?'selected':''}>${s}</option>`).join('')}
-        </select></label>
-      <label>Domain Cost (₹)
-        <input name="domainCost" type="number" min="0" step="0.01" value="${p.domainCost||0}"></label>
-      <label>Hosting Cost (₹)
-        <input name="hostingCost" type="number" min="0" step="0.01" value="${p.hostingCost||0}"></label>
-      <label>Other Project Expenses (₹)
-        <input name="otherExpenses" type="number" min="0" step="0.01" value="${p.otherExpenses||0}"></label>
-      <label>Delivery Date
-        <input name="deliveryDate" type="date" value="${esc(p.deliveryDate||'')}"></label>
+      
+      <!-- Live Website URL -->
       <label>Live Website URL
         <input name="liveUrl" value="${esc(p.liveUrl||'')}" placeholder="https://..."></label>
-      <label>GitHub / Repository URL
-        <input name="repoUrl" value="${esc(p.repoUrl||'')}" placeholder="https://github.com/..."></label>
-      <label class="full">Project Description
-        <textarea name="description" rows="2">${esc(p.description||'')}</textarea></label>
-      <label class="full">Notes
-        <textarea name="notes" rows="2">${esc(p.notes||'')}</textarea></label>
+      
+      <!-- Deadline -->
+      <label>Deadline
+        <input name="deadline" type="date" value="${esc(p.deadline||'')}"></label>
+      
       <div class="form-error full" id="proj-err"></div>
-      <div class="form-actions full"><button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button type="submit" class="btn btn-primary">${id?'Save Changes':'Create Project'}</button></div>
+      <div class="form-actions full">
+        <button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button type="submit" class="btn btn-primary">${id?'Save Changes':'Create Project'}</button>
+      </div>
     </form>`, {wide:true});
 
   document.getElementById('form-proj').onsubmit = async (e) => {
@@ -1104,13 +1095,20 @@ function openProjectForm(id, clientId){
     }
 
     let rec = { 
-      ...p, id: p.id || uid(), displayId: p.displayId || await nextDisplayId('projects','PR'),
+      ...p, 
+      id: p.id || uid(), 
+      displayId: p.displayId || await nextDisplayId('projects','PR'),
       createdAt: p.createdAt || new Date().toISOString(),
-      clientId: data.clientId, name: data.name.trim(), type: data.type,
-      description: data.description, agreedPrice: data.agreedPrice,
-      startDate: data.startDate, deadline: data.deadline, status: data.status,
-      domainCost: data.domainCost, hostingCost: data.hostingCost, otherExpenses: data.otherExpenses,
-      deliveryDate: data.deliveryDate, liveUrl: data.liveUrl, repoUrl: data.repoUrl, notes: data.notes
+      clientId: data.clientId, 
+      name: data.name.trim(),
+      agreedPrice: data.agreedPrice,
+      liveUrl: data.liveUrl,
+      deadline: data.deadline,
+      status: p.status || 'In Progress',
+      startDate: p.startDate || todayStr(),
+      domainCost: p.domainCost || 0,
+      hostingCost: p.hostingCost || 0,
+      otherExpenses: p.otherExpenses || 0
     };
     rec = sanitizeRecord(rec, ['startDate','deadline','deliveryDate'], ['agreedPrice','domainCost','hostingCost','otherExpenses'], ['clientId']);
 
@@ -1363,11 +1361,8 @@ function openProjectDetail(id){
     <div class="card" style="background:rgba(0,0,0,0.2);">
       <div class="stat-sub">Status</div>
       <div class="mt-1" style="font-size:15px;">${projectStatusBadge(p.status)} ${payStatusBadge(st)}</div>
-      <div class="stat-sub mt-2">Type: ${esc(p.type||'—')}</div>
-      <div class="stat-sub">Deadline: ${fmtDate(p.deadline)} · Delivery: ${fmtDate(p.deliveryDate)}</div>
-      ${p.description?`<div class="mt-2"><div class="stat-label">Description</div><p style="margin:6px 0;font-size:13px;color:#ccc;">${esc(p.description)}</p></div>`:''}
+      <div class="stat-sub mt-2">Deadline: ${fmtDate(p.deadline)}</div>
       ${p.liveUrl?`<div class="stat-sub mt-2">Live: <a href="${esc(p.liveUrl)}" target="_blank" rel="noopener">${esc(p.liveUrl)}</a></div>`:''}
-      ${p.repoUrl?`<div class="stat-sub">Repo: <a href="${esc(p.repoUrl)}" target="_blank" rel="noopener">${esc(p.repoUrl)}</a></div>`:''}
       <div class="stat-sub mt-2">Net earnings: <strong style="color:${net>=0?'var(--success)':'var(--danger)'}; font-size:14px;">${fmtMoney(net)}</strong></div>
     </div>
     <h3 class="section-title" style="margin-top:20px;">Payments (${payments.length})</h3>
