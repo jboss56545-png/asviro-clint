@@ -434,7 +434,7 @@ function openModal(title, bodyHtml, opts = {}) {
 }
 
 /* ================================================================
-   3. DATABASE LAYER (Supabase + IndexedDB fallback + Activity local)
+   3. DATABASE LAYER
    ================================================================ */
 let supabaseClient = null;
 let useCloud = false;
@@ -511,7 +511,6 @@ const dbClear = async store => {
   await localDB('clear', store);
 };
 
-/* Activity is ALWAYS local-only (IndexedDB) — no Supabase table needed */
 async function logActivity(type, entityType, entityName, description, meta = {}) {
   const rec = {
     id: uid(), type, entityType, entityName: entityName || '',
@@ -829,7 +828,6 @@ function renderDashboard() {
     </div>
   `;
 
-  // Charts
   const months = last6Months();
   const revenueData = months.map(m => S.payments.filter(p => p.status === 'Confirmed' && p.date && p.date.slice(0, 7) === m)
     .reduce((s, p) => s + (p.type === 'Refund' ? -p.amount : p.amount), 0));
@@ -859,7 +857,7 @@ function statCard(label, value, sub, cls = '') {
 }
 
 /* ================================================================
-   9. CLIENTS LIST
+   9. CLIENTS
    ================================================================ */
 function renderClients(parts) {
   $('#page-title').textContent = 'Clients';
@@ -2026,6 +2024,8 @@ function printReceipt(id) {
   const pr = S.projects.find(x => x.id === p.projectId);
   const w = window.open('', '_blank');
   if (!w) return toast('Please allow popups to print', 'error');
+  
+  // Escaped closing script tag to avoid breaking the main HTML parser
   w.document.write(`<!DOCTYPE html><html><head><title>Receipt ${esc(p.displayId)}</title>
     <style>body{font-family:system-ui,sans-serif;padding:30px;max-width:600px;margin:0 auto;color:#111}
     h1{font-size:22px;margin:0 0 4px} .muted{color:#666;font-size:13px}
@@ -2049,7 +2049,7 @@ function printReceipt(id) {
     </table>
     <div class="total">Amount: ${p.type === 'Refund' ? '-' : ''}${fmtMoney(p.amount)}</div>
     <div style="margin-top:40px;text-align:center;color:#666;font-size:12px">Thank you for your business</div>
-    <script>setTimeout(()=>window.print(),250)</script></body></html>`);
+    <scr` + `ipt>setTimeout(()=>window.print(),250)</scr` + `ipt></body></html>`);
   w.document.close();
 }
 
@@ -2081,7 +2081,7 @@ async function importJSON(ev) {
 }
 
 async function wipeAll() {
-  if (!(await confirmAction('WARNING: This will permanently delete ALL data (clients, projects, payments, expenses, follow-ups). This cannot be undone. Type-confirm not available yet — proceed?'))) return;
+  if (!(await confirmAction('WARNING: This will permanently delete ALL data (clients, projects, payments, expenses, follow-ups). This cannot be undone. Proceed?'))) return;
   try {
     for (const s of ['clients', 'projects', 'payments', 'expenses', 'followups']) await dbClear(s);
     await localDB('clear', 'activity');
